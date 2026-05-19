@@ -17,18 +17,18 @@
 BrainSpark 采用微服务架构，通过 Kubernetes 进行容器编排管理。各服务通过 API Gateway 统一暴露，内部服务间通过 REST/GRPC 进行通信。
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                            Client Layer                              │
-│   Student App      Parent App       Teacher App       CLI/Scripts   │
-└─────────┬───────────┬───────────────┬──────────────────────────────┘
-          │           │               │
-┌─────────▼───────────▼───────────────▼──────────────────────────────┐
-│                            Nginx Layer                               │
-│                    Reverse Proxy + SSL Termination                   │
-│   │         │          │          │          │          │           │
-│  student  parent     teacher  backend  │  ai-service   static        │
-│   :3000    :3001      :3002      :8080  │   :8001           │        │
-└─────────┬───────────┬───────────┬──────┬──────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                            Client Layer                                        │
+│   Student App      Parent App       Teacher App    Operator Web       CLI/Scripts  │
+└─────────┬───────────┬───────────────┬──────────────┬────────────────────────────┘
+          │           │               │              │
+┌─────────▼───────────▼───────────────▼──────────────▼────────────────────────────┐
+│                            Nginx Layer                                            │
+│                    Reverse Proxy + SSL Termination                                │
+│   │         │          │          │         │              │         │            │
+│  student  parent     teacher  operator  backend   │  ai-service   static          │
+│   :3000    :3001      :3002     :3003      :8080  │   :8001           │           │
+└─────────┬───────────┬───────────┬────────┬──────┬──────────────────────────┘
           │           │           │      │
 ┌─────────▼───────────▼───────────▼──────▼──────────────────────────┐
 │                         Backend Cluster                             │
@@ -65,6 +65,27 @@ BrainSpark 采用微服务架构，通过 Kubernetes 进行容器编排管理。
 | student-app | Vue3 + PixiJS | 3000 | WebGL游戏测评 |
 | parent-app | Vue3 + Element Plus | 3001 | 家长仪表板 |
 | teacher-app | Vue3 + Element Plus | 3002 | 教师管理后台 |
+| operator-web | Vue3 + Element Plus | 3003 | 运营管理后台 + 运维监控面板 |
+
+### 1.1 运营管理应用 (Operator Web)
+
+| 模块 | 功能说明 | 角色 |
+|------|----------|------|
+| 数据统计看板 | 注册/付费转化/活跃统计 | OPERATOR, ADMIN |
+| 内容管理 | 商品/套餐配置 | OPERATOR, ADMIN |
+| 知识库管理 | RAG教育知识内容维护 | OPERATOR |
+| 机构合作 | 审批/合同/结算 | OPERATOR, ADMIN |
+| 通知管理 | 群发通知/推送 | OPERATOR |
+| 系统配置 | 平台参数/权限配置 | ADMIN |
+
+### 1.2 运维监控面板 (Operator Web - 子模块)
+
+| 模块 | 功能说明 | 访问方式 |
+|------|----------|----------|
+| 服务健康监控 | 各服务UP/DOWN状态 | IP白名单 |
+| 性能仪表盘 | QPS、响应时间、错误率 | IP白名单 |
+| 日志查询 | 关键字检索、分级过滤 | IP白名单 |
+| 实例管理 | 容器/Pod状态查看 | IP白名单 |
 
 ### 2. 网关层 (Gateway Layer)
 
@@ -76,6 +97,7 @@ BrainSpark 采用微服务架构，通过 Kubernetes 进行容器编排管理。
   /student/*     -> student-app:3000
   /parent/*      -> parent-app:3001
   /teacher/*     -> teacher-app:3002
+  /operator/*    -> operator-web:3003
   /api/*         -> backend-gateway:8081
   /ai/*          -> ai-service:8001
 ```
@@ -90,15 +112,30 @@ BrainSpark 采用微服务架构，通过 Kubernetes 进行容器编排管理。
 
 #### Java 业务服务 (`business-backend`)
 - 用户认证 (JWT)
-- 用户/C端/任务/报告 CRUD
+- 用户/班级管理/测评任务/报告 CRUD
+- 订单与支付管理（订单状态机、支付网关对接、订阅生命周期）
+- 运营管理API（内容/知识库/统计/机构/通知）
 - 消息队列异步写入 ClickHouse
 - HTTP 接口为 AI Service 提供数据
+
+#### Go 网关服务 (`backend-gateway`)
+- 高并发游戏结果上报
+- API Gateway (路由分发、限流熔断)
+- Request ID 追踪
+- WebSocket 连接
 
 #### AI 服务 (`ai-service`)
 - FastAPI + LangChain + PyMilvus
 - 认知能力向量分析
 - LLM报告生成
 - 教育知识库检索(RAG)
+
+#### 订单支付服务 (`order-service`)
+> **注**: 一期可与 `business-backend` 合并，二期拆分独立服务
+- 订单状态机管理 (CREATED -> PENDING_PAY -> PAID -> COMPLETED/REFUNDED)
+- 微信支付/支付宝集成
+- 订阅生命周期管理（续费、到期提醒、取消与重新激活）
+- 发票申请与生成
 
 ### 4. 数据层 (Data Layer)
 
@@ -197,6 +234,7 @@ docker compose -f infrastructure/docker/docker-compose.yml up -d
 | student-app | 3000 |
 | parent-app | 3001 |
 | teacher-app | 3002 |
+| operator-web | 3003 |
 | business-backend | 8080 |
 | backend-gateway | 8081 |
 | ai-service | 8001 |
@@ -218,12 +256,20 @@ infra/k8s/
 │   ├── student/
 │   ├── parent/
 │   ├── teacher/
-│   ├── backend/
+│   ├── operator/       # 运营管理后台
+│   ├── business/
 │   ├── gateway/
 │   └── ai/
 └── ingress/
     └── routes.yaml
 ```
+
+**资源限制**:
+- Java 服务: 2 CPU, 2Gi Memory
+- Go 网关: 1 CPU, 1Gi Memory
+- AI 服务: 4 CPU, 8Gi Memory (含GPU)
+- 前端应用: 256Mi Memory, 0.5 CPU
+- 运营管理: 256Mi Memory, 0.5 CPU
 
 **资源限制**:
 - Java 服务: 2 CPU, 2Gi Memory

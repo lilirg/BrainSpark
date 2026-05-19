@@ -13,9 +13,11 @@
 7. [行为事件采集 API](#行为事件采集-api)
 8. [AI 分析与报告 API](#ai-分析与报告-api)
 9. [家长端 API](#家长端-api)
-10. [WebSocket 实时通信](#websocket-实时通信)
-11. [错误处理](#错误处理)
-12. [OpenAPI 规范](#openapi-规范)
+10. [运营管理 API](#运营管理-api)
+11. [运维监控 API](#运维监控-api)
+12. [WebSocket 实时通信](#websocket-实时通信)
+13. [错误处理](#错误处理)
+14. [OpenAPI 规范](#openapi-规范)
 
 ---
 
@@ -28,6 +30,7 @@ BrainSpark 采用微服务架构，API 按服务域划分：
 | 业务后端 | 8080 | `/api/v1` | 用户、班级、测评任务、报告 CRUD |
 | 高并发网关 | 8081 | `/api/v1` | 游戏结果实时采集、WebSocket |
 | AI 服务 | 8001 | `/ai/v1` | 认知分析、报告生成、RAG 检索 |
+| 运营管理 | 8080 | `/api/v1/admin` | 内容管理、数据统计、系统配置 |
 
 ---
 
@@ -526,6 +529,414 @@ POST /api/v1/events/batch
 | `GET` | `/parent/dashboard/{childId}` | 子女仪表板数据 | `PARENT` |
 | `GET` | `/parent/usage` | 使用时长统计 | `PARENT` |
 | `PUT` | `/parent/settings` | 家长设置 | `PARENT` |
+
+---
+
+## 运营管理 API
+
+> **说明**: 运营管理 API 供平台运营人员使用，包括内容管理、数据统计、系统配置、机构合作管理等。
+> 角色要求：`ADMIN` 或具有 `OPERATOR` 运营权限。
+
+### 新增角色：OPERATOR（运营）
+
+| 角色 | 说明 | 权限范围 |
+|------|------|----------|
+| `OPERATOR` | 运营人员 | 内容管理、数据分析、系统配置、审核管理 |
+
+### 内容管理
+
+基础路径: `/api/v1/admin/content`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `GET` | `/admin/content测评库` | 测评量表列表 | `ADMIN`, `OPERATOR` |
+| `POST` | `/admin/content/assessments` | 上架新测评 | `ADMIN`, `OPERATOR` |
+| `PUT` | `/admin/content/assessments/{id}` | 更新测评配置 | `ADMIN`, `OPERATOR` |
+| `POST` | `/admin/content/assessments/{id}/publish` | 发布测评 | `ADMIN` |
+| `POST` | `/admin/content/assessments/{id}/hide` | 下架测评 | `ADMIN` |
+
+#### 测评配置请求体
+
+```json
+{
+  "name": "舒尔特方格-进阶版",
+  "type": "SCHULTE_GRID",
+  "difficulty": 2,
+  "config": {
+    "gridSize": 5,
+    "timeLimit": 45,
+    "theme": "space",
+    "targetNumbers": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+  },
+  "minAge": 6,
+  "maxAge": 12,
+  "isFree": false,
+  "requiresPremium": true
+}
+```
+
+### 知识库管理
+
+基础路径: `/api/v1/admin/knowledge`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `GET` | `/admin/knowledge/docs` | 知识库文档列表（分页） | `ADMIN`, `OPERATOR` |
+| `POST` | `/admin/knowledge/docs` | 新增知识文档 | `ADMIN`, `OPERATOR` |
+| `PUT` | `/admin/knowledge/docs/{id}` | 更新知识文档 | `ADMIN`, `OPERATOR` |
+| `DELETE` | `/admin/knowledge/docs/{id}` | 删除知识文档 | `ADMIN` |
+| `POST` | `/admin/knowledge/rebuild` | 重新构建向量索引 | `ADMIN` |
+
+### 数据统计
+
+基础路径: `/api/v1/admin/analytics`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `GET` | `/admin/analytics/dashboard` | 运营仪表板总览 | `ADMIN`, `OPERATOR` |
+| `GET` | `/admin/analytics/users` | 用户增长数据 | `ADMIN`, `OPERATOR` |
+| `GET` | `/admin/analytics/assessments` | 测评完成统计 | `ADMIN`, `OPERATOR` |
+| `GET` | `/admin/analytics/reports` | 报告生成统计 | `ADMIN`, `OPERATOR` |
+| `GET` | `/admin/analytics/revenue` | 收入统计（含机构结算） | `ADMIN` |
+
+#### 运营仪表板响应
+
+```json
+{
+  "code": 200,
+  "data": {
+    "totalUsers": 12580,
+    "activeUsers": {
+      "today": 856,
+      "week": 3245,
+      "month": 8921
+    },
+    "assessmentsToday": 320,
+    "reportsGeneratedToday": 285,
+    "revenueToday": 5680,
+    "revenueMonth": 186500,
+    "topAssessments": [
+      {"type": "SCHULTE_GRID", "completions": 15420, "avgScore": 82.5},
+      {"type": "NUMBER_SPAN", "completions": 8930, "avgScore": 68.3}
+    ],
+    "userGrowth7d": [120, 135, 128, 142, 156, 148, 165]
+  }
+}
+```
+
+### 机构合作管理
+
+基础路径: `/api/v1/admin/partners`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `GET` | `/admin/partners` | 合作机构列表 | `ADMIN`, `OPERATOR` |
+| `POST` | `/admin/partners` | 新增合作机构 | `ADMIN` |
+| `GET` | `/admin/partners/{id}` | 机构详情 | `ADMIN`, `OPERATOR` |
+| `PUT` | `/admin/partners/{id}` | 更新机构信息 | `ADMIN` |
+| `GET` | `/admin/partners/{id}/analytics` | 机构数据看板 | `ADMIN`, `OPERATOR` |
+
+#### 新增机构请求体
+
+```json
+{
+  "name": "阳光教育集团",
+  "type": "TRAINING_CENTER",
+  "contactPerson": "张经理",
+  "contactPhone": "13800138000",
+  "maxStudents": 500,
+  "priceMultiplier": 0.8,
+  "features": ["CLASS_MANAGEMENT", "REPORT_VIEWING"]
+}
+```
+
+### 审核管理
+
+基础路径: `/api/v1/admin/moderation`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `GET` | `/admin/moderation/reports` | 报告反馈列表 | `ADMIN`, `OPERATOR` |
+| `PUT` | `/admin/moderation/reports/{id}` | 处理反馈 | `ADMIN`, `OPERATOR` |
+| `GET` | `/admin/moderation/contents` | 用户生成内容审核 | `ADMIN`, `OPERATOR` |
+| `POST` | `/admin/moderation/contents/{id}/approve` | 通过审核 | `ADMIN`, `OPERATOR` |
+| `POST` | `/admin/moderation/contents/{id}/reject` | 驳回审核 | `ADMIN`, `OPERATOR` |
+
+### 系统配置
+
+基础路径: `/api/v1/admin/config`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `GET` | `/admin/config` | 获取所有配置项 | `ADMIN` |
+| `PUT` | `/admin/config/{key}` | 更新配置项 | `ADMIN` |
+| `POST` | `/admin/config/batch` | 批量更新配置 | `ADMIN` |
+
+#### 配置项示例
+
+```json
+{
+  "key": "assessment.defaultTimeLimit",
+  "value": "60",
+  "type": "NUMBER",
+  "description": "默认测评时长(秒)",
+  "editable": true
+}
+```
+
+### 通知管理
+
+基础路径: `/api/v1/admin/notifications`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `GET` | `/admin/notifications` | 通知列表（分页） | `ADMIN`, `OPERATOR` |
+| `POST` | `/admin/notifications` | 创建通知 | `ADMIN`, `OPERATOR` |
+| `PUT` | `/admin/notifications/{id}` | 更新通知 | `ADMIN` |
+| `POST` | `/admin/notifications/{id}/send` | 发送通知 | `ADMIN`, `OPERATOR` |
+| `DELETE` | `/admin/notifications/{id}` | 删除通知 | `ADMIN` |
+
+---
+
+## 订单与支付 API
+
+> **说明**: 订单与支付 API 支持 BrainSpark 的商业模式，包括单次报告购买和年度订阅服务。
+> 参考商业模式：专业版订阅（¥199/年）、单次深度报告（¥29/次）。
+
+### 商品与套餐
+
+基础路径: `/api/v1/shop`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `GET` | `/shop/products` | 商品列表（公开发布的商品） | 所有登录用户 |
+| `GET` | `/shop/products/{id}` | 商品详情 | 所有登录用户 |
+| `GET` | `/shop/packages` | 套餐列表 | 所有登录用户 |
+| `GET` | `/shop/redeem` | 优惠券兑换 | 所有登录用户 |
+
+#### 商品/套餐类型
+
+| 类型 | 说明 | 价格示例 |
+|------|------|----------|
+| `SINGLE_REPORT` | 单次深度 AI 报告 | ¥29 |
+| `SUBSCRIPTION_YEARLY` | 专业版年度订阅 | ¥199/年 |
+| `SUBSCRIPTION_MONTHLY` | 专业版月度订阅 | ¥29/月 |
+| `COUPON` | 优惠券/兑换码 | 折扣面值 |
+| `BUNDLE` | 组合套餐（测评+报告+训练） | ¥99 |
+
+#### 商品响应示例
+
+```json
+{
+  "code": 200,
+  "data": {
+    "id": "product-uuid",
+    "name": "专业版年度订阅",
+    "type": "SUBSCRIPTION_YEARLY",
+    "price": 19900,
+    "originalPrice": 29900,
+    "currency": "CNY",
+    "features": [
+      "全模块测评无限制",
+      "深度 AI 认知报告",
+      "个性化训练计划",
+      "季度能力追踪"
+    ],
+    "isValid": true,
+    "publishAt": "2026-01-01T00:00:00Z"
+  }
+}
+```
+
+### 订单管理
+
+基础路径: `/api/v1/orders`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `POST` | `/orders` | 创建订单 | 所有登录用户 |
+| `GET` | `/orders` | 我的订单列表（分页） | 所有登录用户 |
+| `GET` | `/orders/{id}` | 订单详情 | 订单创建者 |
+| `POST` | `/orders/{id}/cancel` | 取消订单 | 订单创建者 |
+| `GET` | `/orders/{id}/status` | 查询订单状态 | 订单创建者 |
+
+#### 创建订单请求体
+
+```json
+{
+  "items": [
+    {
+      "productId": "product-uuid",
+      "productName": "专业版年度订阅",
+      "quantity": 1,
+      "unitPrice": 19900,
+      "type": "SUBSCRIPTION_YEARLY"
+    }
+  ],
+  "couponCode": "BRAINSPARK2026",
+  "requestId": "unique-request-uuid",
+  "redirectUrl": "https://parent.brainspark.com/pay-success"
+}
+```
+
+**响应**
+
+```json
+{
+  "code": 200,
+  "data": {
+    "orderId": "order-uuid",
+    "amount": 19900,
+    "discount": 0,
+    "totalAmount": 19900,
+    "expireAt": "2026-05-19T09:30:00Z",
+    "payMethods": ["WECHAT_PAY", "ALIPAY"],
+    "paymentUrl": "https://pay.brainspark.com/checkout?order_id=...",
+    "status": "PENDING"
+  }
+}
+```
+
+#### 订单状态流转
+
+```
+CREATED -> PENDING_PAY -> PAID -> COMPLETED
+                 |              |
+                 |              |---> REFUNDING -> REFUNDED
+                 v
+              CANCELLED / EXPIRED
+```
+
+### 支付回调
+
+> **注意**: 这是第三方支付平台的回调地址，客户端无需调用。
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `POST` | `/api/v1/payments/wechat/callback` | 微信支付回调 |
+| `POST` | `/api/v1/payments/alipay/callback` | 支付宝回调 |
+| `POST` | `/api/v1/payments/verify` | 验证支付结果（客户端轮询用） |
+
+#### 验证支付响应
+
+```json
+{
+  "code": 200,
+  "data": {
+    "orderId": "order-uuid",
+    "status": "PAID",
+    "paidAt": "2026-05-19T09:01:00Z",
+    "transactionId": "wechat_trans_123456",
+    "activatedFeatures": ["SUBSCRIPTION_YEARLY"]
+  }
+}
+```
+
+### 订阅管理
+
+基础路径: `/api/v1/subscription`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `GET` | `/subscription/status` | 当前订阅状态 | 所有登录用户 |
+| `GET` | `/subscription/history` | 订阅历史 | 所有登录用户 |
+| `POST` | `/subscription/cancel` | 取消订阅（下周期生效） | 当前订阅者 |
+| `POST` | `/subscription/reactivate` | 重新激活订阅 | 已取消未过期的订阅 |
+| `GET` | `/subscription/benefits` | 权益清单 | 所有登录用户 |
+
+#### 订阅状态响应
+
+```json
+{
+  "code": 200,
+  "data": {
+    "isActive": true,
+    "planType": "SUBSCRIPTION_YEARLY",
+    "startedAt": "2026-01-15T00:00:00Z",
+    "expiresAt": "2027-01-15T00:00:00Z",
+    "autoRenew": true,
+    "remainingDays": 235,
+    "features": [
+      {"name": "全模块测评", "unlimited": true},
+      {"name": "深度 AI 报告", "unlimited": true},
+      {"name": "季度能力追踪", "available": true}
+    ]
+  }
+}
+```
+
+### 发票管理
+
+基础路径: `/api/v1/invoices`
+
+| 方法 | 路径 | 说明 | 角色 |
+|------|------|------|------|
+| `POST` | `/invoices/apply` | 申请开票 | 所有登录用户 |
+| `GET` | `/invoices` | 我的发票列表 | 所有登录用户 |
+| `GET` | `/invoices/{id}` | 发票详情 | 发票申请人 |
+| `GET` | `/invoices/{id}/download` | 下载发票 PDF | 发票申请人 |
+
+---
+
+## 运维监控 API
+
+> **说明**: 运维监控 API 供运维和开发人员使用，用于服务健康检查、性能监控、日志查询等。
+> 注意：此 API 无需 JWT 认证，但需通过 IP 白名单访问。
+
+### 服务健康检查
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/health` | 综合健康检查（所有服务） |
+| `GET` | `/api/health/business` | 业务后端健康检查 |
+| `GET` | `/api/health/gateway` | 网关健康检查 |
+| `GET` | `/api/health/ai` | AI 服务健康检查 |
+
+**响应**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-05-19T09:00:00Z",
+  "services": {
+    "business": {"status": "healthy", "database": "connected", "mongodb": "connected"},
+    "gateway": {"status": "healthy", "clickhouse": "connected", "redis": "connected"},
+    "ai": {"status": "healthy", "milvus": "connected", "openai": "connected"}
+  }
+}
+```
+
+### 性能指标
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/metrics/prometheus` | Prometheus 格式指标 |
+| `GET` | `/api/metrics/gateway/qps` | 网关 QPS/RT |
+| `GET` | `/api/metrics/database/slow-queries` | 数据库慢查询日志 |
+
+### 日志查询
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/logs/traces` | 链路追踪日志（按 traceId 查询） |
+| `GET` | `/api/logs/errors` | 错误日志聚合 |
+| `POST` | `/api/logs/search` | 高级日志搜索 |
+
+### 实例管理
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/instances` | 服务实例列表 |
+| `POST` | `/api/instances/{id}/restart` | 重启实例（需确认） |
+| `GET` | `/api/instances/{id}/metrics` | 实例性能指标 |
+
+### 运维任务
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `POST` | `/api/operations/db-migrate` | 执行数据库迁移 |
+| `POST` | `/api/operations/vector-rebuild` | 重新构建向量索引 |
+| `POST` | `/api/operations/cache-clear` | 清除 Redis 缓存 |
+| `POST` | `/api/operations/report-batch-generate` | 批量生成报告 |
 
 ---
 

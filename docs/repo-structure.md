@@ -9,11 +9,12 @@ BrainSpark/                          # 根目录 (Monorepo)
 │   ├── shared-utils/                # 公共工具函数
 │   └── ui-components/               # 可复用UI组件库
 ├── apps/                            # 应用模块
-│   ├── student-app/                 # 学生端 (Vue3 + PixiJS)
-│   ├── parent-app/                  # 家长端 (Vue3 + Element Plus/Vant)
-│   ├── teacher-app/                 # 教师端 (Vue3 + Element Plus)
-│   ├── business-backend/            # Java 业务后端 (Spring Boot 3)
-│   ├── gateway-backend/             # Go 高并发网关 (Gin)
+│   ├── student-web/                 # 学生端 (Vue3 + PixiJS)
+│   ├── parent-web/                  # 家长端 (Vue3 + Element Plus/Vant)
+│   ├── teacher-web/                 # 教师端 (Vue3 + Element Plus)
+│   ├── operator-web/                # 运营管理端 (Vue3 + Element Plus)
+│   ├── backend-business/            # Java 业务后端 (Spring Boot 3)
+│   ├── backend-gateway/             # Go 高并发网关 (Gin)
 │   ├── ai-service/                  # AI 推理服务 (FastAPI)
 │   └── analytics-engine/            # ClickHouse OLAP 分析服务 (Go/Python)
 ├── infra/                           # 基础设施配置
@@ -64,6 +65,30 @@ BrainSpark/                          # 根目录 (Monorepo)
 #### `apps/teacher-app/` - 教师端
 - **技术栈**: Vue3 + Vite + TypeScript + Element Plus
 - **端口**: 3002
+
+#### `apps/operator-web/` - 运营管理端
+- **技术栈**: Vue3 + Vite + TypeScript + Element Plus + ECharts
+- **端口**: 3003
+- **模块结构**:
+  ```
+  operator-web/
+  ├── src/
+  │   ├── components/           # 基础UI组件
+  │   ├── views/               # 页面视图
+  │   │   ├── dashboard/       # 数据统计看板
+  │   │   ├── content-mgmt/    # 商品/套餐管理
+  │   │   ├── knowledge-base/  # 教育知识库管理
+  │   │   ├── institution/     # 机构合作管理
+  │   │   ├── notification/    # 通知管理
+  │   │   ├── monitoring/      # 运维监控面板
+  │   │   └── system-config/   # 系统配置
+  │   ├── apis/                # API 请求封装
+  │   ├── router/              # 路由配置 (菜单权限)
+  │   ├── stores/              # Pinia 状态管理
+  │   └── utils/               # 工具函数
+  ├── package.json
+  └── vite.config.ts
+  ```
 
 ### 2. 后端服务
 
@@ -269,22 +294,30 @@ packages:
 ```yaml
 services:
   student-app:        # 前端
-    build: ./apps/student-app
+    build: ./apps/student-web
     ports: ["3000:3000"]
-  parent-app:         # 前端  
-    build: ./apps/parent-app
+  parent-app:         # 前端
+    build: ./apps/parent-web
     ports: ["3001:3001"]
   teacher-app:        # 前端
-    build: ./apps/teacher-app
+    build: ./apps/teacher-web
     ports: ["3002:3002"]
+  operator-web:       # 运营管理端
+    build: ./apps/operator-web
+    ports: ["3003:3003"]
   
-  business-backend:   # Java
-    build: ./apps/business-backend
+  business-backend:   # Java (含订单支付)
+    build: ./apps/backend-business
     ports: ["8080:8080"]
     depends_on: [mysql, mongodb]
   
+  order-service:      # Java (订单支付，二期独立部署)
+    build: ./apps/order-service
+    ports: ["8085:8085"]
+    depends_on: [mysql, redis]
+  
   gateway-backend:    # Go
-    build: ./apps/gateway-backend
+    build: ./apps/backend-gateway
     ports: ["8081:8081"]
     depends_on: [clickhouse, redis]
   
@@ -303,6 +336,7 @@ infra/k8s/
 │   ├── student/
 │   ├── parent/
 │   ├── teacher/
+│   ├── operator/       # 运营管理后台
 │   ├── business/
 │   ├── gateway/
 │   └── ai/

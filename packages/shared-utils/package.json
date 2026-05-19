@@ -1,0 +1,17 @@
+{
+  "name": "@brainspark/shared-utils",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BrainSpark 公共工具函数",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0",
+    "eslint": "^8.50.0"
+  }
+}

@@ -85,6 +85,10 @@ graph TD
             P1[数据看板与报告]
             P2[控制与支付]
         end
+        subgraph 运营管理端 (Web)
+            O1[运营管理后台<br/>内容/机构/数据统计]
+            O2[运维监控面板<br/>健康检查/性能/日志]
+        end
     end
 
     subgraph 接入与网关层
@@ -125,8 +129,10 @@ graph TD
 | :--- | :--- | :--- |
 | **学生端 (Web)** | **Vue 3 + TS + Vite + PixiJS** | Vue3保障开发效率；PixiJS(WebGL)保障复杂测评游戏的60fps流畅渲染。 |
 | **家长/教师端** | **Vue 3 + Element Plus / Vant** | 适合复杂图表展示、报告排版和后台管理。 |
+| **运营管理端 (Web)** | **Vue 3 + Element Plus** | 后台管理界面、数据可视化、机构管理、内容审核、系统配置。 |
 | **后端 (业务)** | **Java (Spring Boot 3) / Go** | Java处理复杂业务逻辑，Go处理高并发游戏结果上报网关。 |
 | **后端 (AI)** | **Python (FastAPI)** | 方便对接LangChain、大模型SDK和向量数据库。 |
+| **后端 (订单/支付)** | **Java (Spring Boot 3)** | 统一管理订单状态机、支付网关对接、订阅生命周期。 |
 | **数据库** | **MySQL + MongoDB + ClickHouse** | MySQL存核心业务，MongoDB存非结构化行为轨迹，ClickHouse做常模OLAP分析。 |
 | **AI 基础设施** | **LangChain + Milvus + 备案大模型API** | 构建RAG应用，Milvus存储教育知识库向量。 |
 
