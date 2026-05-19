@@ -260,10 +260,10 @@ export interface CognitiveDimensions {
                                        │ RAG检索
                                        ▼
                                   Milvus (知识库)
-                                       │
-                                       │ LLM推理
-                                       ▼
-                                   报告/建议
+                                        │
+                                        │ LLM推理
+                                        ▼
+                                    报告/建议
 ```
 
 ## ⚙️ 开发工具
@@ -372,4 +372,3 @@ pnpm build
 
 # 测试
 pnpm test
-```
