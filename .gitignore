@@ -1,0 +1,76 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+.out/
+.target/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Test coverage
+coverage/
+*.lcov
+
+# Turbo
+.turbo/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Go
+*.exe
+*.exe.stackdump
+*.out
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+*.egg-info/
+
+# Docker
+.docker/
+
+# K8s
+!infrastructure/k8s/base/
+infrastructure/k8s/*/secrets/
+
+# AI
+milvus/
+向量数据/
+
+# 忽略特定应用的配置
+apps/*/!.env.example

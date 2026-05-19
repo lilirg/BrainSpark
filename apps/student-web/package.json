@@ -1,0 +1,30 @@
+{
+  "name": "@brain-spark/student-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix"
+  },
+  "dependencies": {
+    "@brain-spark/shared-types": "workspace:*",
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.5",
+    "pinia": "^2.1.7",
+    "pixi.js": "^7.3.2",
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.2",
+    "typescript": "^5.3.2",
+    "vite": "^5.0.8",
+    "vue-tsc": "^1.8.25",
+    "vitest": "^1.1.0",
+    "@brain-spark/typescript-config": "workspace:*",
+    "@brain-spark/eslint-config": "workspace:*"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "brain-spark-mono",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:all": "turbo dev",
+    "dev:student": "turbo dev --filter=apps/student-web",
+    "dev:parent": "turbo dev --filter=apps/parent-web",
+    "dev:teacher": "turbo dev --filter=apps/teacher-web",
+    "dev:business": "turbo dev --filter=apps/backend-business",
+    "dev:gateway": "turbo dev --filter=apps/backend-gateway",
+    "dev:ai": "turbo dev --filter=apps/ai-service",
+    "build:all": "turbo build",
+    "build:student": "turbo build --filter=apps/student-web",
+    "build:parent": "turbo build --filter=apps/parent-web",
+    "build:teacher": "turbo build --filter=apps/teacher-web",
+    "build:business": "turbo build --filter=apps/backend-business",
+    "build:gateway": "turbo build --filter=apps/backend-gateway",
+    "build:ai": "turbo build --filter=apps/ai-service",
+    "test:all": "turbo test",
+    "lint:all": "turbo lint",
+    "typecheck:all": "turbo typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^1.11.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
