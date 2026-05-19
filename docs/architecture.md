@@ -4,13 +4,31 @@
 
 ## 目录
 
-1. [系统概览](#系统概览)
-2. [架构分层](#架构分层)
-3. [服务设计](#服务设计)
+1. [设计文档索引](#设计文档索引)
+2. [系统概览](#系统概览)
+3. [架构分层](#架构分层)
 4. [数据架构](#数据架构)
-5. [API 设计](#api-设计)
-6. [基础设施](#基础设施)
+5. [消息队列](#消息队列)
+6. [配置管理](#配置管理)
 7. [部署架构](#部署架构)
+
+## 设计文档索引
+
+本文档是 BrainSpark 平台架构设计的总览。各个核心模块的详细设计已拆分为独立文档，请参阅：
+
+| # | 模块 | 详细设计文档 | 核心内容 |
+|---|------|-------------|----------|
+| 1 | 学生端 (`student-web`) | [`student-web-design.md`](./student-web-design.md) | PixiJS WebGL 游戏引擎、`performance.now()` 微秒级采集、IndexedDB 断点续测 |
+| 2 | 教师端 (`teacher-web`) | [`teacher-web-design.md`](./teacher-web-design.md) | 班级/学生管理、测评布置、报告批注、数据看板 |
+| 3 | 家长端 (`parent-web`) | [`parent-web-design.md`](./parent-web-design.md) (参考 [`scheme.md`](./scheme.md)) | 成长趋势可视化、订阅管理、报告下载 |
+| 4 | 接入与网关层 | [`gateway-design.md`](./gateway-design.md) | Nginx 反代与 SSL 终结、Go 高并发网关、限流/RequestId/WebSocket |
+| 5 | 后端业务服务 | [`business-backend-design.md`](./business-backend-design.md) | Java Spring Boot 3、用户/测评/订单/管理员 API、MySQL 核心 Schema |
+| 6 | AI 服务 | [`ai-service-design.md`](./ai-service-design.md) | FastAPI + LangChain、认知分析引擎、报告生成 Prompt |
+| 7 | 业务中台 | [`middleware-design.md`](./middleware-design.md) | 用户与合规 (监护人同意)、测评引擎 (状态机/反作弊)、报告与档案、内容商城 (订阅) |
+| 8 | AI 与数据引擎 | [`data-engine-design.md`](./data-engine-design.md) | Kafka 消息流、Flink 实时清洗/反作弊、ClickHouse 常模对比、Milvus RAG |
+| 9 | 基础设施 | [`infrastructure-design.md`](./infrastructure-design.md) | MySQL 集群、MongoDB/Redis/Kafka 部署、Docker Compose、K8s + Helm、CI/CD |
+
+---
 
 ## 系统概览
 
