@@ -8,7 +8,8 @@
 |--------|------|------|
 | `overview.md` | 系统架构总览 | 待创建 |
 | `api-contract.md` | API 契约定义 | 待创建 |
-| `data-model.md` | 数据模型定义 | 待创建 |
+| `data-model.md` | 数据模型定义 (黄金源) | 已创建 |
+| `database-design.md` | 数据库设计概览 | 已创建 |
 
 ## 黄金源规则
 
