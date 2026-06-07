@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# 环境文件
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 测试
+tests/
+.coverage
+htmlcov/
+
+# 文档
+README.md
+
+# 日志
+logs/
