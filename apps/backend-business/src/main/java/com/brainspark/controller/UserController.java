@@ -1,7 +1,7 @@
-package com.braSpark.controller;
+package com.brainspark.controller;
 
-import com.braSpark.entity.User;
-import com.braSpark.service.UserService;
+import com.brainspark.entity.User;
+import com.brainspark.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

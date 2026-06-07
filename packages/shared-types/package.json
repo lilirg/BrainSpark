@@ -1,5 +1,5 @@
 {
-  "name": "@brain-spark/shared-types",
+  "name": "@brainspark/shared-types",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@brain-spark/typescript-config": "workspace:*",
-    "@brain-spark/eslint-config": "workspace:*"
+    "@brainspark/typescript-config": "workspace:*",
+    "@brainspark/eslint-config": "workspace:*"
   }
 }

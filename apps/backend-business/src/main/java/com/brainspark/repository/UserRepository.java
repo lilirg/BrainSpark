@@ -1,6 +1,6 @@
-package com.braSpark.repository;
+package com.brainspark.repository;
 
-import com.braSpark.entity.User;
+import com.brainspark.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

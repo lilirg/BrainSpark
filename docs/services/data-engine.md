@@ -1,12 +1,14 @@
 # BrainSpark AI 与数据引擎层详细设计文档
 
+> **实现状态: 规划中** — 当前项目中尚无 `apps/data-engine` 目录或相关代码。本文档描述的是目标架构设计，待后续迭代实现。
+
 > 本文档详细描述 BrainSpark 平台的"AI 与数据引擎层"架构设计，包含行为数据清洗（Kafka + Flink）、特征工程与常模分析（ClickHouse）、RAG 评估引擎。
 
 ## 1. 数据引擎总览
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                   AI & Data Engine Layer                              │
+│                   AI & Data Engine Layer  【规划中】                   │
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │  数据流入                                                      │  │
 │  │  Go Gateway ──Kafka──► Kafka Topics                           │  │
@@ -790,7 +792,7 @@ class MilvusVectorStore:
 
 ```mermaid
 flowchart LR
-    subgraph Source
+    subgraph Source【规划中】
         A[Student Web] -->|事件数据 HTTP 上报| B(Go Gateway)
     end
     

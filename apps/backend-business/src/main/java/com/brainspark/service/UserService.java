@@ -1,7 +1,7 @@
-package com.braSpark.service;
+package com.brainspark.service;
 
-import com.braSpark.entity.User;
-import com.braSpark.repository.UserRepository;
+import com.brainspark.entity.User;
+import com.brainspark.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

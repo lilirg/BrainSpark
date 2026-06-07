@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.braSpark</groupId>
+    <groupId>com.brainspark</groupId>
     <artifactId>backend-business</artifactId>
     <version>0.1.0</version>
     <name>BrainSpark Business Service</name>

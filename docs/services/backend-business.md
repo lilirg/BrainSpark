@@ -21,38 +21,35 @@
 │  │  (port 8080)                                                    │  │
 │  │                                                               │  │
 │  │  ┌───────────────────────────────────────────────────────┐    │  │
-│  │  │  Controller Layer                                       │    │  │
-│  │  │  - 用户管理   - 班级管理  - 测评任务   - 报告服务      │    │  │
-│  │  │  - 订单支付   - 内容管理  - 运营管理   - 通知推送      │    │  │
+│  │  │  Controller Layer (当前实现: User 模块)                │    │  │
+│  │  │  - 用户管理 (已实现)                                   │    │  │
+│  │  │  - 班级管理 / 测评任务 / 报告服务 / 订单支付 (规划中)   │    │  │
 │  │  └───────────────────────────────────────────────────────┘    │  │
 │  │                                                               │  │
 │  │  ┌───────────────────────────────────────────────────────┐    │  │
-│  │  │  Service Layer                                        │    │  │
-│  │  │  - 用户服务   - 测评服务  - AI 服务接口  - 订单服务    │    │  │
-│  │  │  - 报告服务   - 内容服务  - 通知服务                   │    │  │
+│  │  │  Service Layer (当前实现: User 模块)                   │    │  │
+│  │  │  - 用户服务 (已实现)                                   │    │  │
+│  │  │  - 测评服务 / AI 服务接口 / 订单服务 (规划中)          │    │  │
 │  │  └───────────────────────────────────────────────────────┘    │  │
 │  │                                                               │  │
 │  │  ┌───────────────────────────────────────────────────────┐    │  │
-│  │  │  Repository Layer                                     │    │  │
-│  │  │  - MySQL (JPA)   - MongoDB (Spring Data)              │    │  │
-│  │  └───────────────────────────────────────────────────────┘    │  │
-│  │                                                               │  │
-│  │  ┌───────────────────────────────────────────────────────┐    │  │
-│  │  │  Async Layer                                          │    │  │
-│  │  │  - Kafka Producer   - Redis Cache                     │    │  │
-│  │  │  - ClickHouse Batch Write                             │    │  │
+│  │  │  Repository Layer (当前实现: User 模块)                │    │  │
+│  │  │  - MySQL (JPA) - UserRepository (已实现)              │    │  │
+│  │  │  - MongoDB / Redis / Kafka (规划中)                   │    │  │
 │  │  └───────────────────────────────────────────────────────┘    │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
-                            │           │
-                            ▼           ▼
+                            │
+                            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     Data Layer                                      │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐           │
-│  │  MySQL   │  │ MongoDB  │  │ Redis    │  │ ClickHouse│           │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘           │
+│  ┌──────────┐  ┌──────────┐                                         │
+│  │  MySQL   │  │ MongoDB  │  (Redis / ClickHouse 规划中)            │
+│  └──────────┘  └──────────┘                                         │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+> **当前状态:** 仅 User 模块（用户 CRUD）已实现，其余模块处于规划阶段。
 
 ## 2. 目录结构
 
@@ -65,258 +62,82 @@ apps/backend-business/
 │   ├── main/
 │   │   ├── java/com/brainspark/
 │   │   │   ├── BrainSparkApplication.java     # 启动类
-│   │   │   ├── config/                        # 配置类
-│   │   │   │   ├── SecurityConfig.java        # Spring Security 配置
-│   │   │   │   ├── JwtAuthenticationFilter.java # JWT 过滤器
-│   │   │   │   ├── RedisConfig.java           # Redis 配置
-│   │   │   │   ├── MongoConfig.java           # MongoDB 配置
-│   │   │   │   ├── KafkaConfig.java           # Kafka 配置
-│   │   │   │   ├── ClickHouseConfig.java      # ClickHouse 配置 (JDBC)
-│   │   │   │   ├── OpenApiConfig.java         # Swagger/OpenAPI 配置
-│   │   │   │   └── AsyncConfig.java           # 异步线程池配置
 │   │   │   ├── controller/                    # 控制器
-│   │   │   │   ├── AuthController.java        # 认证接口 (登录/注册/刷新)
-│   │   │   │   ├── UserController.java        # 用户管理 (CRUD)
-│   │   │   │   ├── ClassController.java       # 班级管理
-│   │   │   │   ├── AssessmentTaskController.java # 测评任务管理
-│   │   │   │   ├── AssessmentResultsController.java # 测评结果
-│   │   │   │   ├── ReportController.java      # 报告服务
-│   │   │   │   ├── OrderController.java       # 订单管理
-│   │   │   │   ├── PaymentController.java     # 支付接口
-│   │   │   │   ├── SubscriptionController.java # 订阅管理
-│   │   │   │   ├── ContentController.java     # 内容管理 (测评/题库)
-│   │   │   │   ├── KnowledgeBaseController.java # 知识库管理
-│   │   │   │   ├── NotificationController.java # 通知推送
-│   │   │   │   ├── OperationStatsController.java # 运营统计
-│   │   │   │   ├── OrganizationController.java # 机构管理
-│   │   │   │   └── HealthController.java      # 健康检查
+│   │   │   │   └── UserController.java        # 用户管理 (CRUD) [已实现]
+│   │   │   │   # 其他 Controller (规划中):
+│   │   │   │   # - AuthController.java        # 认证接口
+│   │   │   │   # - ClassController.java       # 班级管理
+│   │   │   │   # - AssessmentTaskController.java # 测评任务管理
+│   │   │   │   # - ReportController.java      # 报告服务
+│   │   │   │   # - OrderController.java       # 订单管理
+│   │   │   │   # - PaymentController.java     # 支付接口
+│   │   │   │   # - NotificationController.java # 通知推送
+│   │   │   │   # - HealthController.java      # 健康检查
 │   │   │   ├── service/                       # 业务逻辑
-│   │   │   │   ├── UserService.java           # 用户服务
-│   │   │   │   ├── AuthService.java           # 认证服务
-│   │   │   │   ├── JwtService.java            # JWT 服务
-│   │   │   │   ├── ClassService.java          # 班级服务
-│   │   │   │   ├── AssessmentTaskService.java # 测评任务服务
-│   │   │   │   ├── AssessmentService.java     # 测评服务
-│   │   │   │   ├── ReportService.java         # 报告服务
-│   │   │   │   ├── AiServiceClient.java       # AI 服务客户端
-│   │   │   │   ├── OrderService.java          # 订单服务
-│   │   │   │   ├── PaymentService.java        # 支付服务
-│   │   │   │   ├── SubscriptionService.java   # 订阅服务
-│   │   │   │   ├── ContentService.java        # 内容服务
-│   │   │   │   ├── NotificationService.java   # 通知服务
-│   │   │   │   ├── EventProcessingService.java # 事件处理服务
-│   │   │   │   └── ComplianceService.java     # 合规服务 (脱敏/加密)
+│   │   │   │   └── UserService.java           # 用户服务 [已实现]
+│   │   │   │   # 其他 Service (规划中):
+│   │   │   │   # - AuthService.java           # 认证服务
+│   │   │   │   # - ClassService.java          # 班级服务
+│   │   │   │   # - AssessmentService.java     # 测评服务
+│   │   │   │   # - ReportService.java         # 报告服务
+│   │   │   │   # - OrderService.java          # 订单服务
+│   │   │   │   # - NotificationService.java   # 通知服务
 │   │   │   ├── repository/                    # 数据访问层
-│   │   │   │   ├── UserRepository.java        # 用户 (MySQL)
-│   │   │   │   ├── ClassRepository.java       # 班级 (MySQL)
-│   │   │   │   ├── AssessmentTaskRepository.java # 测评任务 (MySQL)
-│   │   │   │   ├── OrderRepository.java       # 订单 (MySQL)
-│   │   │   │   ├── SubscriptionRepository.java # 订阅 (MySQL)
-│   │   │   │   ├── EventRecordRepository.java  # 事件记录 (MongoDB)
-│   │   │   │   └── NotificationRepository.java # 通知 (MySQL)
+│   │   │   │   └── UserRepository.java        # 用户 (MySQL) [已实现]
+│   │   │   │   # 其他 Repository (规划中):
+│   │   │   │   # - ClassRepository.java       # 班级 (MySQL)
+│   │   │   │   # - AssessmentTaskRepository.java # 测评任务 (MySQL)
+│   │   │   │   # - OrderRepository.java       # 订单 (MySQL)
+│   │   │   │   # - EventRecordRepository.java # 事件记录 (MongoDB)
 │   │   │   ├── entity/                        # 实体类
-│   │   │   │   ├── User.java                  # 用户实体
-│   │   │   │   ├── Class.java                 # 班级实体
-│   │   │   │   ├── AssessmentTask.java        # 测评任务实体
-│   │   │   │   ├── AssessmentResult.java      # 测评结果实体
-│   │   │   │   ├── Order.java                 # 订单实体
-│   │   │   │   ├── Subscription.java          # 订阅实体
-│   │   │   │   ├── ContentItem.java           # 内容条目实体
-│   │   │   │   ├── KnowledgeBase.java         # 知识库实体
-│   │   │   │   ├── Notification.java          # 通知实体
-│   │   │   │   ├── Organization.java          # 机构实体
-│   │   │   │   └── EventRecord.java           # 事件记录 (MongoDB)
-│   │   │   ├── dto/                           # 数据传输对象
-│   │   │   │   ├── auth/                      # 认证相关
-│   │   │   │   │   ├── LoginRequest.java
-│   │   │   │   │   ├── LoginResponse.java
-│   │   │   │   │   └── RefreshTokenRequest.java
-│   │   │   │   ├── user/                      # 用户相关
-│   │   │   │   │   ├── UserCreateRequest.java
-│   │   │   │   │   ├── UserUpdateRequest.java
-│   │   │   │   │   └── UserProfileResponse.java
-│   │   │   │   ├── assessment/                # 测评相关
-│   │   │   │   │   ├── AssessmentTaskRequest.java
-│   │   │   │   │   ├── AssessmentResultResponse.java
-│   │   │   │   │   └── CognitiveProfile.java
-│   │   │   │   ├── report/                    # 报告相关
-│   │   │   │   │   ├── ReportGenerateRequest.java
-│   │   │   │   │   └── ReportResponse.java
-│   │   │   │   ├── order/                     # 订单相关
-│   │   │   │   │   ├── OrderCreateRequest.java
-│   │   │   │   │   ├── OrderResponse.java
-│   │   │   │   │   └── PaymentCallback.java
-│   │   │   │   ├── notification/              # 通知相关
-│   │   │   │   │   ├── NotificationCreateRequest.java
-│   │   │   │   │   └── NotificationResponse.java
-│   │   │   │   └── common/                    # 通用
-│   │   │   │       ├── PageResponse.java
-│   │   │   │       └── ApiResponse.java
-│   │   │   ├── enums/                         # 枚举定义
-│   │   │   │   ├── UserRole.java              # 用户角色
-│   │   │   │   ├── OrderStatus.java           # 订单状态
-│   │   │   │   ├── PaymentMethod.java         # 支付方式
-│   │   │   │   ├── SubscriptionPlan.java      # 订阅方案
-│   │   │   │   ├── AssessmentType.java        # 测评类型
-│   │   │   │   └── NotificationType.java      # 通知类型
-│   │   │   ├── exception/                     # 异常处理
-│   │   │   │   ├── BusinessException.java     # 业务异常
-│   │   │   │   ├── ResourceNotFoundException.java # 资源未找到
-│   │   │   │   ├── DuplicateResourceException.java # 重复资源
-│   │   │   │   └── GlobalExceptionHandler.java # 全局异常处理器
-│   │   │   └── util/                          # 工具类
-│   │   │       ├── EncryptionUtils.java       # 加密工具
-│   │   │       ├── ComplianceUtils.java       # 合规脱敏工具
-│   │   │       └── DateUtils.java             # 日期工具
-│   │   └── resources/
-│   │       ├── application.yml                # 主配置文件
-│   │       ├── application-dev.yml            # 开发环境配置
-│   │       ├── application-prod.yml           # 生产环境配置
-│   │       └── db/migration/                  # Flyway 数据库迁移脚本
-│   │           ├── V1__init_schema.sql
-│   │           ├── V2__add_assessment_tables.sql
-│   │           └── V3__add_order_tables.sql
-│   └── test/
-│       └── java/com/brainspark/
-│           ├── controller/
-│           ├── service/
-│           └── repository/
-└── README.md
+│   │   │   │   └── User.java                  # 用户实体 [已实现]
+│   │   │   │   # 其他 Entity (规划中):
+│   │   │   │   # - Class.java                 # 班级实体
+│   │   │   │   # - AssessmentTask.java        # 测评任务实体
+│   │   │   │   # - AssessmentResult.java      # 测评结果实体
+│   │   │   │   # - Order.java                 # 订单实体
+│   │   │   │   # - Subscription.java          # 订阅实体
+│   │   │   │   # - Notification.java          # 通知实体
+│   │   │   │   # - Organization.java          # 机构实体
+│   │   │   │   # - EventRecord.java           # 事件记录 (MongoDB)
+│   │   │   │   # dto/ (规划中)
+│   │   │   │   # enums/ (规划中)
+│   │   │   │   # exception/ (规划中)
+│   │   │   │   # util/ (规划中)
+│   │   │   └── resources/
+│   │   │       └── application.yml            # 主配置文件
+│   │   └── test/                              # 测试 (规划中)
+│   └── README.md
 ```
+
+> **说明:** 当前仅实现 User 模块的 Controller、Service、Repository、Entity 四个核心文件。其余模块均处于规划阶段，目录和文件尚未创建。
 
 ## 3. 数据库设计
 
-### 3.1 核心实体关系
-
-```mermaid
-erDiagram
-    organization ||--o{ class : owns
-    class ||--o{ user : has
-    user ||--o{ student-profile : contains
-    user ||--o{ assessment-task : creates
-    user ||--o{ subscription : has
-    user ||--o{ order : places
-    class ||--o{ student-profile : has
-    user ||--o{ assessment-result : completes
-    assessment-task ||--o{ assessment-result : generates
-    assessment-result }o--|| assessment-type : belongs
-    assessment-result ||--|| report : generates
-    user ||--o{ content-item : manages
-    user ||--o{ notification : receives
-    assessment-type }o--|| cognitive-dimension : belongs
-    order ||--|| subscription : enables
-
-    organization {
-        bigint id PK
-        string name
-        string contact
-        string status
-    }
-
-    class {
-        bigint id PK
-        bigint org_id FK
-        string name
-        string grade
-        string teacher_id FK
-        datetime created_at
-    }
-
-    user {
-        bigint id PK
-        string username
-        string password_hash
-        enum role
-        string real_name
-        string avatar
-        json extra_info
-        datetime created_at
-        datetime updated_at
-    }
-
-    student-profile {
-        bigint id PK
-        bigint user_id FK
-        date birth_date
-        string school
-        string grade
-        json health_info
-        boolean has_guardian_consent
-        datetime consent_time
-    }
-
-    assessment-task {
-        bigint id PK
-        bigint org_id FK
-        string title
-        string type
-        json config
-        int difficulty
-        int duration_min
-        boolean is_active
-        datetime created_at
-    }
-
-    assessment-result {
-        bigint id PK
-        bigint user_id FK
-        bigint task_id FK
-        string request_id
-        json score_data
-        json cognitive_profile
-        string status
-        datetime started_at
-        datetime completed_at
-        datetime created_at
-    }
-
-    order {
-        bigint id PK
-        bigint user_id FK
-        string order_no
-        enum status
-        bigint amount_cents
-        enum payment_method
-        string payment_url
-        json callback_data
-        datetime created_at
-        datetime paid_at
-    }
-
-    subscription {
-        bigint id PK
-        bigint user_id FK
-        enum plan
-        datetime start_time
-        datetime end_time
-        boolean is_active
-        string payment_id FK
-    }
-```
-
-### 3.2 MySQL 核心表
+### 3.1 当前实现: User 表
 
 ```sql
--- 用户表
+-- 用户表 (已实现)
 CREATE TABLE users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL, -- ADMIN, TEACHER, STUDENT, PARENT, OPERATOR
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL, -- ADMIN, TEACHER, STUDENT, PARENT
     real_name VARCHAR(50),
     avatar VARCHAR(255),
-    phone VARCHAR(20),
-    email VARCHAR(100),
-    status VARCHAR(20) DEFAULT 'ACTIVE', -- ACTIVE, DISABLED, PENDING_VERIFY
-    extra_info JSON, -- 额外属性（年龄、年级等）
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_username (username),
-    INDEX idx_role (role),
-    INDEX idx_status (status)
+    INDEX idx_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
 
--- 家长学生关联表
+### 3.2 规划中的表
+
+以下表结构为设计规划，尚未实现:
+
+```sql
+-- 家长学生关联表 (规划中)
 CREATE TABLE family_bindings (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     parent_user_id BIGINT NOT NULL,
@@ -328,7 +149,7 @@ CREATE TABLE family_bindings (
     UNIQUE KEY uk_family (parent_user_id, student_user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 班级表
+-- 班级表 (规划中)
 CREATE TABLE classes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     org_id BIGINT,
@@ -342,7 +163,7 @@ CREATE TABLE classes (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 班级成员表
+-- 班级成员表 (规划中)
 CREATE TABLE class_members (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     class_id BIGINT NOT NULL,
@@ -352,28 +173,28 @@ CREATE TABLE class_members (
     UNIQUE KEY uk_class_member (class_id, user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 测评类型表
+-- 测评类型表 (规划中)
 CREATE TABLE assessment_types (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE, -- SCHULTER, DIGITAL_SPAN, PATTERN_REASONING
+    code VARCHAR(50) NOT NULL UNIQUE,
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    cognitive_dimension VARCHAR(50), -- VISUAL, AUDITORY, MEMORY, LOGIC
+    cognitive_dimension VARCHAR(50),
     duration_seconds INT,
     version VARCHAR(20),
-    config JSON, -- 测评参数
+    config JSON,
     is_published BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 测评任务表
+-- 测评任务表 (规划中)
 CREATE TABLE assessment_tasks (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     org_id BIGINT,
     class_id BIGINT,
     title VARCHAR(200) NOT NULL,
     type_code VARCHAR(50) NOT NULL,
-    config JSON, -- 任务配置（难度、顺序、白/黑卡）
+    config JSON,
     difficulty INT DEFAULT 1,
     duration_min INT DEFAULT 10,
     assigned_at TIMESTAMP,
@@ -386,7 +207,7 @@ CREATE TABLE assessment_tasks (
     INDEX idx_class (class_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 测评结果表
+-- 测评结果表 (规划中)
 CREATE TABLE assessment_results (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -394,10 +215,10 @@ CREATE TABLE assessment_results (
     type_code VARCHAR(50) NOT NULL,
     request_id VARCHAR(100),
     session_id VARCHAR(100),
-    score_data JSON, -- 原始分数
-    cognitive_profile JSON, -- 认知画像维度分数
-    ai_recommendations JSON, -- AI 建议
-    report_status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, PROCESSING, COMPLETED, FAILED
+    score_data JSON,
+    cognitive_profile JSON,
+    ai_recommendations JSON,
+    report_status VARCHAR(20) DEFAULT 'PENDING',
     status VARCHAR(20) DEFAULT 'FINISHED',
     started_at TIMESTAMP NULL,
     completed_at TIMESTAMP NULL,
@@ -408,10 +229,10 @@ CREATE TABLE assessment_results (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-### 3.3 MongoDB 集合设计
+### 3.3 MongoDB 集合设计 (规划中)
 
 ```javascript
-// 事件记录集合 (事件记录)
+// 事件记录集合 (规划中)
 {
     _id: ObjectId,
     event_id: "event-xxxxx",
@@ -419,7 +240,7 @@ CREATE TABLE assessment_results (
     session_id: "session-yyyyy",
     type: "CLICK | HOVER | KEY_DOWN | ASSESSMENT_START | ASSESSMENT_COMPLETE",
     task_id: "task-zzzzz",
-    performance_start: 1234567.890123,  // performance.now() 精确值 (毫秒)
+    performance_start: 1234567.890123,
     pointer_x: 450,
     pointer_y: 320,
     pointer_pressure: 1.0,
@@ -442,7 +263,7 @@ db.event_records.createIndex({ created_at: -1 })
 db.event_records.createIndex({ user_id: 1, created_at: -1 })
 ```
 
-### 3.4 ClickHouse 表设计
+### 3.4 ClickHouse 表设计 (规划中)
 
 ```sql
 CREATE TABLE event_records_ch (
@@ -451,7 +272,7 @@ CREATE TABLE event_records_ch (
     session_id String,
     type LowCardinality(String),
     task_id String,
-    performance_start Decimal64(6),  -- 微秒级精度
+    performance_start Decimal64(6),
     pointer_x Float32,
     pointer_y Float32,
     created_at DateTime,
@@ -466,7 +287,7 @@ CREATE TABLE assessment_results_ch (
     type_code LowCardinality(String),
     score_value Float64,
     score_percentile Float64,
-    age_group String,  -- 年龄分组常模对比
+    age_group String,
     created_at DateTime,
     request_id String
 ) ENGINE = MergeTree()
@@ -475,7 +296,70 @@ ORDER BY (user_id, created_at);
 
 ## 4. API 接口设计
 
-### 4.1 认证接口
+### 4.1 当前实现: 用户管理接口
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/api/v1/users` | 获取所有用户列表 | 无 (当前实现) |
+| `GET` | `/api/v1/users/{id}` | 获取用户详情 | 无 (当前实现) |
+| `POST` | `/api/v1/users` | 创建用户 | 无 (当前实现) |
+| `PUT` | `/api/v1/users/{id}` | 更新用户信息 | 无 (当前实现) |
+| `DELETE` | `/api/v1/users/{id}` | 删除用户 | 无 (当前实现) |
+
+**请求/响应示例:**
+
+```json
+// GET /api/v1/users 响应
+[
+    {
+        "id": 1,
+        "username": "teacher01",
+        "password": "secure-password",
+        "role": "TEACHER",
+        "realName": "张老师",
+        "avatar": null,
+        "createdAt": "2026-06-01T08:00:00",
+        "updatedAt": "2026-06-01T08:00:00"
+    }
+]
+
+// POST /api/v1/users 请求
+{
+    "username": "student01",
+    "password": "password123",
+    "role": "STUDENT",
+    "realName": "李小明"
+}
+
+// POST /api/v1/users 响应
+{
+    "id": 2,
+    "username": "student01",
+    "password": "password123",
+    "role": "STUDENT",
+    "realName": "李小明",
+    "avatar": null,
+    "createdAt": "2026-06-07T08:00:00",
+    "updatedAt": "2026-06-07T08:00:00"
+}
+
+// PUT /api/v1/users/1 请求
+{
+    "username": "teacher01",
+    "realName": "张老师(已更新)",
+    "role": "TEACHER",
+    "avatar": "https://example.com/avatar.png"
+}
+
+// DELETE /api/v1/users/1 响应
+// HTTP 200 OK (无响应体)
+```
+
+### 4.2 规划中的 API 接口
+
+以下接口为设计规划，尚未实现:
+
+#### 认证接口 (规划中)
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
@@ -484,43 +368,7 @@ ORDER BY (user_id, created_at);
 | `POST` | `/api/v1/auth/logout` | 登出 | Bearer Token |
 | `POST` | `/api/v1/auth/register` | 注册 (家长/教师) | 无 |
 
-```json
-// POST /api/v1/auth/login 请求
-{
-    "username": "teacher01",
-    "password": "secure-password"
-}
-
-// 响应
-{
-    "code": 200,
-    "data": {
-        "access_token": "eyJhbGciOiJIUzI1NiIs...",
-        "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
-        "token_type": "Bearer",
-        "expires_in": 3600,
-        "user": {
-            "id": 12345,
-            "username": "teacher01",
-            "role": "TEACHER",
-            "real_name": "张老师"
-        }
-    }
-}
-```
-
-### 4.2 用户管理接口
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| `GET` | `/api/v1/users/me` | 获取当前用户信息 | Bearer Token |
-| `PUT` | `/api/v1/users/me` | 更新当前用户信息 | Bearer Token |
-| `GET` | `/api/v1/users/{id}` | 获取用户详情 | Bearer Token |
-| `GET` | `/api/v1/users` | 用户列表 (分页) | Bearer Token |
-| `POST` | `/api/v1/users` | 创建用户 (家长/教师) | Bearer Token (Manager/Admin) |
-| `DELETE` | `/api/v1/users/{id}` | 注销用户 | Bearer Token (Admin) |
-
-### 4.3 班级管理接口
+#### 班级管理接口 (规划中)
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
@@ -532,7 +380,7 @@ ORDER BY (user_id, created_at);
 | `POST` | `/api/v1/classes/{id}/members` | 添加成员 | Bearer Token (Teacher/Manager) |
 | `DELETE` | `/api/v1/classes/{id}/members/{user_id}` | 移除成员 | Bearer Token (Teacher/Manager) |
 
-### 4.4 测评接口
+#### 测评接口 (规划中)
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
@@ -544,7 +392,7 @@ ORDER BY (user_id, created_at);
 | `GET` | `/api/v1/assessment/results/{id}` | 获取测评详情 | Bearer Token |
 | `GET` | `/api/v1/assessment/available` | 获取可测试任务 | Bearer Token (Student) |
 
-### 4.5 报告接口
+#### 报告接口 (规划中)
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
@@ -553,17 +401,7 @@ ORDER BY (user_id, created_at);
 | `GET` | `/api/v1/reports/{id}` | 获取报告详情 | Bearer Token |
 | `POST` | `/api/v1/reports/{id}/feedback` | 提交反馈 | Bearer Token (Teacher) |
 
-```json
-// POST /api/v1/reports/generate 请求
-{
-    "user_id": 12345,
-    "assessment_result_ids": [1, 2, 3],
-    "include_recommendations": true,
-    "include_trend_analysis": true
-}
-```
-
-### 4.6 订单支付接口
+#### 订单支付接口 (规划中)
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
@@ -574,7 +412,7 @@ ORDER BY (user_id, created_at);
 | `POST` | `/api/v1/payments/callback/wechat` | 微信支付回调 | 签名验证 |
 | `POST` | `/api/v1/payments/callback/alipay` | 支付宝回调 | 签名验证 |
 
-### 4.7 订阅管理接口
+#### 订阅管理接口 (规划中)
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
@@ -583,7 +421,7 @@ ORDER BY (user_id, created_at);
 | `POST` | `/api/v1/subscriptions/cancel` | 取消订阅 | Bearer Token |
 | `POST` | `/api/v1/subscriptions/reactivate` | 重新激活 | Bearer Token |
 
-### 4.8 运营接口
+#### 运营接口 (规划中)
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
@@ -592,7 +430,7 @@ ORDER BY (user_id, created_at);
 | `GET` | `/api/v1/stats/assessments` | 测评统计 | Bearer Token (Manager/Admin) |
 | `GET` | `/api/v1/stats/financial` | 财务统计 | Bearer Token (Admin) |
 
-### 4.9 统一响应格式
+### 4.3 统一响应格式 (规划中)
 
 ```json
 {
@@ -619,27 +457,62 @@ ORDER BY (user_id, created_at);
 }
 ```
 
-### 4.10 分页响应格式
+> **说明:** 当前实现直接返回实体对象，未封装统一响应格式。统一响应格式 (`ApiResponse`、`PageResponse`) 为规划内容。
 
-```json
-{
-    "code": 200,
-    "data": {
-        "items": [],
-        "total": 100,
-        "page": 1,
-        "size": 20,
-        "total_pages": 5
+## 5. 核心业务逻辑
+
+### 5.1 当前实现: 用户服务
+
+```java
+// service/UserService.java (已实现)
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class UserService {
+
+    private final UserRepository userRepository;
+
+    public List<User> findAll() {
+        return userRepository.findAll();
+    }
+
+    public User findById(Long id) {
+        return userRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+    }
+
+    public User save(User user) {
+        return userRepository.save(user);
+    }
+
+    public User update(Long id, User updatedUser) {
+        User existingUser = findById(id);
+        existingUser.setUsername(updatedUser.getUsername());
+        existingUser.setRealName(updatedUser.getRealName());
+        existingUser.setRole(updatedUser.getRole());
+        existingUser.setAvatar(updatedUser.getAvatar());
+        return userRepository.save(existingUser);
+    }
+
+    public void delete(Long id) {
+        userRepository.deleteById(id);
+    }
+
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new EntityNotFoundException("User not found with username: " + username));
     }
 }
 ```
 
-## 5. 核心业务逻辑
+### 5.2 规划中的业务逻辑
 
-### 5.1 用户认证服务
+以下业务逻辑为设计规划，尚未实现:
+
+#### 用户认证服务 (规划中)
 
 ```java
-// service/AuthService.java
+// service/AuthService.java (规划中)
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -652,7 +525,7 @@ public class AuthService {
         User user = userRepository.findByUsername(request.username())
             .orElseThrow(() -> new BusinessException("Invalid credentials"));
 
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new BusinessException("Invalid credentials");
         }
 
@@ -669,64 +542,16 @@ public class AuthService {
 
         User user = new User();
         user.setUsername(request.username());
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(request.role());
         user.setRealName(request.realName());
-        user.setStatus("PENDING_VERIFY");
-
-        // 未成年模式：注册后需要家长同意
-        if (user.getRole() == UserRole.STUDENT) {
-            user.setExtraInfo(Map.of("needs_consent", true));
-        }
 
         userRepository.save(user);
     }
 }
 ```
 
-### 5.2 JWT 认证过滤器
-
-```java
-// config/JwtAuthenticationFilter.java
-@Component
-@RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
-    private final JwtService jwtService;
-    private final UserRepository userRepository;
-
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
-        
-        final String authHeader = request.getHeader("Authorization");
-        
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        final String jwt = authHeader.substring(7);
-        final String username = jwtService.extractUsername(jwt);
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            User user = userRepository.findByUsername(username).orElse(null);
-
-            if (jwtService.isTokenValid(jwt, user)) {
-                UsernamePasswordAuthenticationToken authToken = 
-                    new UsernamePasswordAuthenticationToken(
-                        user, null, user.getAuthorities());
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
-        }
-
-        filterChain.doFilter(request, response);
-    }
-}
-```
-
-### 5.3 测评结果处理流程
+#### 测评结果处理流程 (规划中)
 
 ```
 用户完成测评 
@@ -759,50 +584,10 @@ AI 服务生成报告 -> 回调 Java 后端
 更新报告状态
 ```
 
-```java
-// controller/AssessmentResultsController.java
-@RestController
-@RequestMapping("/api/v1/assessment/results")
-@RequiredArgsConstructor
-public class AssessmentResultsController {
-
-    private final AssessmentService assessmentService;
-
-    @GetMapping
-    public ResponseEntity<PageResponse<AssessmentResultResponse>> getResults(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String typeCode,
-            Authentication authentication) {
-        
-        // ... 获取用户 ID
-        User user = getCurrentUser(authentication);
-        Page<AssessmentResult> results = assessmentService.findResults(userId, typeCode, page, size);
-        
-        PageResponse<AssessmentResultResponse> response = results.map(AssessmentResultResponse::from);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<AssessmentResultResponse> getResult(
-            @PathVariable Long id,
-            Authentication authentication) {
-        
-        // 权限校验：只有本人/班主任/管理员可查看
-        if (!hasPermission(authentication, id)) {
-            throw new BusinessException("Forbidden");
-        }
-        
-        AssessmentResult result = assessmentService.findById(id);
-        return ResponseEntity.ok(AssessmentResultResponse.from(result));
-    }
-}
-```
-
-### 5.4 报告服务 - AI 报告生成
+#### 报告服务 - AI 报告生成 (规划中)
 
 ```java
-// service/ReportService.java
+// service/ReportService.java (规划中)
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -817,34 +602,34 @@ public class ReportService {
     public Report generateReport(String userId, List<Long> resultIds) {
         // 1. 获取测评结果
         List<AssessmentResult> results = assessmentResultRepository.findByIdIn(resultIds);
-        
+
         // 2. 合规校验
         complianceService.validateAccess(userId, results);
-        
+
         // 3. 脱敏处理
         results.forEach(r -> complianceService.sanitizeSensitiveData(r));
-        
+
         // 4. 触发异步报告生成 (发送给 Kafka)
         KafkaReportEvent event = new KafkaReportEvent();
         event.setUserId(userId);
         event.setResultIds(resultIds);
-        
+
         kafkaTemplate.send("report.generation", event);
-        
+
         // 5. 返回报告占位符
         Report report = new Report();
         report.setUserId(userId);
         report.setStatus(ReportStatus.PENDING);
         report.setAiRecommendations(Map.of());
         report = reportRepository.save(report);
-        
+
         return report;
     }
 
     public void onCompleteReportGeneration(String reportId, String aiContent) {
         Report report = reportRepository.findById(reportId)
             .orElseThrow(() -> new ResourceNotFoundException("Report not found"));
-        
+
         report.setStatus(ReportStatus.COMPLETED);
         report.setAiContent(aiContent);
         report.setGeneratedAt(LocalDateTime.now());
@@ -853,10 +638,10 @@ public class ReportService {
 }
 ```
 
-### 5.5 订单状态机
+#### 订单状态机 (规划中)
 
 ```java
-// enums/OrderStatus.java
+// enums/OrderStatus.java (规划中)
 public enum OrderStatus {
     CREATED("已创建"),
     PENDING_PAY("待支付"),
@@ -872,7 +657,7 @@ public enum OrderStatus {
     }
 }
 
-// service/OrderService.java
+// service/OrderService.java (规划中)
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -884,63 +669,63 @@ public class OrderService {
     public Order createOrder(String userId, String planCode, BigDecimal amount) {
         User user = userRepository.findById(Long.parseLong(userId))
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        
+
         // 生成订单号
         String orderNo = "ORD" + System.currentTimeMillis() + UUID.randomUUID().toString().substring(0, 6);
-        
+
         Order order = new Order();
         order.setOrderNo(orderNo);
         order.setUserId(userId);
         order.setStatus(OrderStatus.CREATED);
         order.setAmountCents(amount.multiply(BigDecimal.valueOf(100)).intValue());
         order.setCreatedAt(LocalDateTime.now());
-        
+
         return orderRepository.save(order);
     }
 
     @Transactional
     public Order handlePayment(String orderNo, PaymentCallback callback) {
         Order order = findByOrderNo(orderNo);
-        
+
         // 验证回调签名
         if (!paymentService.verifyCallback(callback)) {
             throw new BusinessException("Invalid callback signature");
         }
-        
+
         order.setStatus(OrderStatus.PAID);
         order.setPaymentData(callback);
         order.setPaidAt(LocalDateTime.now());
-        
+
         orderRepository.save(order);
-        
+
         // 更新订阅状态
         subscriptionService.activateSubscription(order);
-        
+
         return order;
     }
 
     @Transactional
     public Order cancelOrder(String orderNo) {
         Order order = findByOrderNo(orderNo);
-        
+
         if (order.getStatus() != OrderStatus.CREATED) {
             throw new BusinessException("Order can only be cancelled when in CREATED status");
         }
-        
+
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
-        
+
         return order;
     }
 }
 ```
 
-## 6. 安全设计
+## 6. 安全设计 (规划中)
 
-### 6.1 Spring Security 配置
+### 6.1 Spring Security 配置 (规划中)
 
 ```java
-// config/SecurityConfig.java
+// config/SecurityConfig.java (规划中)
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -962,7 +747,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/users/{id}").hasRole("TEACHER")
                 .anyRequest().authenticated()
             )
-            .sessionManagement(session -> 
+            .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -976,21 +761,62 @@ public class SecurityConfig {
 }
 ```
 
-### 6.2 未成年用户合规脱敏
+### 6.2 JWT 认证过滤器 (规划中)
 
 ```java
-// util/ComplianceUtils.java
+// config/JwtAuthenticationFilter.java (规划中)
+@Component
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
+
+        final String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        final String jwt = authHeader.substring(7);
+        final String username = jwtService.extractUsername(jwt);
+
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            User user = userRepository.findByUsername(username).orElse(null);
+
+            if (jwtService.isTokenValid(jwt, user)) {
+                UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(
+                        user, null, user.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}
+```
+
+### 6.3 未成年用户合规脱敏 (规划中)
+
+```java
+// util/ComplianceUtils.java (规划中)
 @Component
 public class ComplianceUtils {
 
     public User sanitizeForAi(User user) {
         User sanitized = new User();
         sanitized.setId(user.getId());
-        sanitized.setUsername(anonymize(user.getUsername()));  // "user123" -> "U_******"
+        sanitized.setUsername(anonymize(user.getUsername()));
         sanitized.setRole(user.getRole());
-        sanitized.setRealName(anonymize(user.getRealName()));   // "张三" -> "张*"
-        sanitized.setExtraInfo(filterSensitiveFields(user.getExtraInfo()));
-        sanitized.setPhone(maskPhone(user.getPhone()));         // "13812345678" -> "138****5678"
+        sanitized.setRealName(anonymize(user.getRealName()));
+        sanitized.setPhone(maskPhone(user.getPhone()));
         return sanitized;
     }
 
@@ -1003,25 +829,14 @@ public class ComplianceUtils {
         if (phone == null) return null;
         return phone.substring(0, 3) + "****" + phone.substring(7);
     }
-
-    private Map<String, Object> filterSensitiveFields(Map<String, Object> extraInfo) {
-        // 过滤身份证号、医院信息等敏感字段
-        Set<String> filteredKeys = extraInfo.keySet().stream()
-            .filter(key -> !SENSITIVE_FIELDS.contains(key))
-            .collect(Collectors.toSet());
-        
-        return filteredKeys.stream()
-            .collect(Collectors.toMap(
-                key -> key,
-                extraInfo::get
-            ));
-    }
 }
 ```
 
-## 7. 异步处理机制
+> **说明:** 当前 `pom.xml` 已引入 `spring-boot-starter-security` 和 `jjwt` 依赖，但安全配置类 (`SecurityConfig.java`、`JwtAuthenticationFilter.java`、`JwtService.java`) 尚未实现。当前 User 模块的 API 端点未启用认证拦截。
 
-### 7.1 Kafka 消息主题
+## 7. 异步处理机制 (规划中)
+
+### 7.1 Kafka 消息主题 (规划中)
 
 | 主题 | 生产者 | 消费者 | 描述 |
 |------|--------|--------|------|
@@ -1032,10 +847,10 @@ public class ComplianceUtils {
 | `notification.push` | Java 后端 | 通知服务 | 消息推送 |
 | `payment.completed` | 支付网关 | Java 后端 | 支付成功回调 |
 
-### 7.2 异步事件处理
+### 7.2 异步事件处理 (规划中)
 
 ```java
-// config/AsyncConfig.java
+// config/AsyncConfig.java (规划中)
 @Configuration
 @EnableAsync
 public class AsyncConfig {
@@ -1052,7 +867,7 @@ public class AsyncConfig {
     }
 }
 
-// service/EventProcessingService.java
+// service/EventProcessingService.java (规划中)
 @Service
 @RequiredArgsConstructor
 public class EventProcessingService {
@@ -1066,7 +881,7 @@ public class EventProcessingService {
         for (EventRecord event : events) {
             // 1. 写入 MongoDB
             mongoTemplate.insert(event);
-            
+
             // 2. 发布到 Kafka 供其他服务消费
             String kafkaPayload = serialize(event);
             kafkaTemplate.send("event.ingestion", String.valueOf(event.getUserId()), kafkaPayload);
@@ -1081,120 +896,66 @@ public class EventProcessingService {
 }
 ```
 
+> **说明:** 当前 `pom.xml` 未引入 Kafka 依赖，异步处理机制尚未实现。
+
 ## 8. 配置文件
 
-### 8.1 开发环境 (`application-dev.yml`)
+### 8.1 当前配置 (`application.yml`)
 
 ```yaml
+server:
+  port: 8080
+
 spring:
+  application:
+    name: backend-business
+
+  # Database
   datasource:
-    url: jdbc:mysql://localhost:3306/brainspark_dev?useSSL=false&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:3306/brainspark?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
-    password: dev_password
-  
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/brainspark_events
-    redis:
-      url: redis://localhost:6379
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
-  kafka:
-    bootstrap-servers: localhost:9092
-
+  # JPA
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
 
-clickhouse:
-  jdbc:
-    url: jdbc:clickhouse://localhost:8123/brainspark
-    username: default
-    password:
-
-jwt:
-  secret: dev-super-secret-key-change-in-production
-  access-expiration: 3600000  # 1 小时
-  refresh-expiration: 86400000  # 24 小时
-
-app:
-  frontend:
-    url: http://localhost:5173
-  domain:
-    origin: localhost
-  
-  compliance:
-    anonymize-pii: true
-
-logging:
-  level:
-    com.braSpark: DEBUG
-```
-
-### 8.2 生产环境 (`application-prod.yml`)
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://${MYSQL_HOST}:3306/brainspark_prod?useSSL=true&serverTimezone=Asia/Shanghai
-    username: ${MYSQL_USERNAME}
-    password: ${MYSQL_PASSWORD}
-    hikari:
-      maximum-pool-size: 30
-      minimum-idle: 5
-  
+  # MongoDB
   data:
     mongodb:
-      uri: ${MONGODB_URI}
-    redis:
-      url: ${REDIS_URL}
+      uri: mongodb://localhost:27017/brainspark
 
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+  # Security (JWT)
+  security:
+    jwt:
+      secret: ${JWT_SECRET:mySecretKeyChangeInProduction}
+      expiration: 86400000
 
-  jpa:
-    hibernate:
-      ddl-auto: none
-    show-sql: false
-
-clickhouse:
-  jdbc:
-    url: ${CLICKHOUSE_URL}
-    username: ${CLICKHOUSE_USERNAME}
-    password: ${CLICKHOUSE_PASSWORD}
-
-jwt:
-  secret: ${JWT_SECRET}
-  access-expiration: 3600000
-  refresh-expiration: 86400000
-
-app:
-  frontend:
-    url: ${FRONTEND_URL}
-  domain:
-    origin: ${DOMAIN_ORIGIN}
-  
+# Custom
+brainspark:
   ai:
-    endpoint: ${AI_SERVICE_ENDPOINT}
-    timeout: 30000
-
-logging:
-  level:
-    com.braSpark: INFO
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
+    api-url: ${AI_API_URL:http://localhost:8001}
 ```
+
+### 8.2 规划中的配置文件
+
+以下配置文件为设计规划，尚未创建:
+
+- `application-dev.yml` - 开发环境配置
+- `application-prod.yml` - 生产环境配置
 
 ## 9. 部署与运维
 
 ### 9.1 Docker 配置
 
 ```dockerfile
-# docker/Dockerfile
+# docker/Dockerfile (已实现)
 FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /app
 COPY pom.xml .
@@ -1213,30 +974,7 @@ EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  business-backend:
-    build: ./apps/backend-business
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - MYSQL_HOST=mysql
-      - MONGODB_URI=mongodb://mongo:27017/brainspark_events
-      - REDIS_URL=redis://redis:6379
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - CLICKHOUSE_URL=clickhouse://clickhouse:8123/brainspark
-    depends_on:
-      - mysql
-      - mongo
-      - redis
-      - kafka
-      - clickhouse
-```
-
-### 9.2 健康检查端点
+### 9.2 健康检查端点 (规划中)
 
 ```java
 @RestController
@@ -1266,8 +1004,8 @@ public class HealthController {
         int status = details.values().stream()
             .anyMatch(v -> "error".equals(v)) ? 503 : 200;
 
-        HttpStatus httpStatus = status == 200 
-            ? HttpStatus.OK 
+        HttpStatus httpStatus = status == 200
+            ? HttpStatus.OK
             : HttpStatus.SERVICE_UNAVAILABLE;
 
         return ResponseEntity.status(httpStatus).body(details);
@@ -1280,7 +1018,7 @@ public class HealthController {
         // CPU
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
         details.put("uptime", runtime.getUptime());
-        details.put("process_cpu_usage", 
+        details.put("process_cpu_usage",
             OperatingSystemMXBean.class.cast(
                 ManagementFactory.getOperatingSystemMXBean()).getCpuLoad());
 
@@ -1295,7 +1033,7 @@ public class HealthController {
 }
 ```
 
-## 10. 性能优化
+## 10. 性能优化 (规划中)
 
 | 优化方向 | 方案 |
 |----------|------|
@@ -1306,7 +1044,9 @@ public class HealthController {
 | 异步处理 | Kafka 消息 + 异步线程池 + 批量操作 |
 | 安全 | TLS 1.3 最小化握手开销 + 连接复用 |
 
-## 11. 监控与告警
+> **说明:** 当前 User 模块数据量较小，尚未启用性能优化措施。
+
+## 11. 监控与告警 (规划中)
 
 | 指标 | 说明 | 告警阈值 |
 |------|------|----------|
@@ -1315,3 +1055,25 @@ public class HealthController {
 | 错误率 | HTTP 5xx 比例 | >1% |
 | 数据库连接池 | 活跃连接数 | >80% 最大池 |
 | Kafka 消费延迟 | Lag 消息数 | >1000 条 |
+
+> **说明:** 监控与告警机制尚未实现。
+
+## 附录: 实现状态总览
+
+| 模块 | Controller | Service | Repository | Entity | 状态 |
+|------|-----------|---------|------------|--------|------|
+| 用户管理 (User) | ✅ | ✅ | ✅ | ✅ | **已实现** |
+| 认证 (Auth) | ❌ | ❌ | - | - | 规划中 |
+| 班级管理 (Class) | ❌ | ❌ | ❌ | ❌ | 规划中 |
+| 测评任务 (Assessment) | ❌ | ❌ | ❌ | ❌ | 规划中 |
+| 测评结果 (Result) | ❌ | ❌ | ❌ | ❌ | 规划中 |
+| 报告 (Report) | ❌ | ❌ | ❌ | ❌ | 规划中 |
+| 订单 (Order) | ❌ | ❌ | ❌ | ❌ | 规划中 |
+| 支付 (Payment) | ❌ | ❌ | - | - | 规划中 |
+| 订阅 (Subscription) | ❌ | ❌ | ❌ | ❌ | 规划中 |
+| 通知 (Notification) | ❌ | ❌ | ❌ | ❌ | 规划中 |
+| 运营统计 (Stats) | ❌ | ❌ | - | - | 规划中 |
+| 机构 (Organization) | ❌ | ❌ | - | ❌ | 规划中 |
+| 事件记录 (Event) | - | ❌ | ❌ | ❌ | 规划中 |
+| 安全配置 (Security) | - | ❌ | - | - | 规划中 |
+| 健康检查 (Health) | ❌ | - | - | - | 规划中 |

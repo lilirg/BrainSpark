@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import type { UserInfo } from '@brain-spark/shared-types'
+import type { UserInfo } from '@brainspark/shared-types'
 
 export const useUserStore = defineStore('user', () => {
   const userInfo = ref<UserInfo | null>(null)

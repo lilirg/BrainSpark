@@ -5,9 +5,11 @@
 ```
 BrainSpark/                          # 根目录 (Monorepo)
 ├── packages/                        # 共享包
-│   ├── types/                       # TypeScript 类型定义
+│   ├── shared-types/                # TypeScript 类型定义
 │   ├── shared-utils/                # 公共工具函数
-│   └── ui-components/               # 可复用UI组件库
+│   ├── api-client/                  # API 客户端封装
+│   ├── eslint-config/               # ESLint 共享配置
+│   └── typescript-config/           # TypeScript 共享配置
 ├── apps/                            # 应用模块
 │   ├── student-web/                 # 学生端 (Vue3 + PixiJS)
 │   ├── parent-web/                  # 家长端 (Vue3 + Element Plus/Vant)
@@ -15,35 +17,32 @@ BrainSpark/                          # 根目录 (Monorepo)
 │   ├── operator-web/                # 运营管理端 (Vue3 + Element Plus)
 │   ├── backend-business/            # Java 业务后端 (Spring Boot 3)
 │   ├── backend-gateway/             # Go 高并发网关 (Gin)
-│   ├── ai-service/                  # AI 推理服务 (FastAPI)
-│   └── analytics-engine/            # ClickHouse OLAP 分析服务 (Go/Python)
-├── infra/                           # 基础设施配置
-│   ├── docker/                      # Docker Compose 配置
-│   ├── k8s/                         # Kubernetes 部署
-│   ├── nginx/                       # Nginx 配置
-│   └── scripts/                     # 运维脚本
-├── tools/                           # 开发工具
-│   ├── code-gen/                    # 代码生成器
-│   └── test-utils/                  # 测试工具库
+│   └── ai-service/                  # AI 推理服务 (FastAPI)
 ├── docs/                            # 项目文档
-├── scripts/                         # 构建和CI脚本
+│   ├── architecture/                # 架构设计文档
+│   ├── frontend/                    # 前端开发文档
+│   ├── services/                    # 服务开发文档
+│   ├── infrastructure/              # 基础设施文档
+│   ├── operations/                  # 运维文档
+│   ├── quality/                     # 质量保障文档
+│   ├── product/                     # 产品文档
+│   └── references/                  # 参考资料
+├── plans/                           # 设计方案和规划文档
 ├── pnpm-workspace.yaml              # PNPM workspace 配置
 ├── package.json                     # 根 package.json
-├── turbo.json                       # Turborepo 构建配置
-├── Dockerfile                       # 容器化配置
-└── docker-compose.yml               # 本地开发环境
+└── turbo.json                       # Turborepo 构建配置
 ```
 
 ## 📦 模块详情
 
 ### 1. 前端应用
 
-#### `apps/student-app/` - 学生端 (测评游戏引擎)
+#### `apps/student-web/` - 学生端 (测评游戏引擎)
 - **技术栈**: Vue3 + Vite + TypeScript + PixiJS (WebGL)
 - **端口**: 3000
 - **核心模块**:
   ```
-  student-app/
+  student-web/
   ├── src/
   │   ├── components/           # 基础UI组件
   │   ├── games/               # 测评游戏逻辑
@@ -58,11 +57,11 @@ BrainSpark/                          # 根目录 (Monorepo)
   └── vite.config.ts
   ```
 
-#### `apps/parent-app/` - 家长端
+#### `apps/parent-web/` - 家长端
 - **技术栈**: Vue3 + Vite + TypeScript + Element Plus/Vant (移动端)
 - **端口**: 3001
 
-#### `apps/teacher-app/` - 教师端
+#### `apps/teacher-web/` - 教师端
 - **技术栈**: Vue3 + Vite + TypeScript + Element Plus
 - **端口**: 3002
 
@@ -92,12 +91,12 @@ BrainSpark/                          # 根目录 (Monorepo)
 
 ### 2. 后端服务
 
-#### `apps/business-backend/` - Java 业务后端 (8080)
+#### `apps/backend-business/` - Java 业务后端 (8080)
 - **技术栈**: Spring Boot 3 + Java 17 + MyBatis-Plus
 - **职责**: 用户管理、班级管理、测评任务、报告管理等核心业务
 - **核心包结构**:
   ```
-  business-backend/
+  backend-business/
   ├── src/main/java/com/brainspark/
   │   ├── controller/         # REST API 控制器
   │   ├── service/           # 业务逻辑
@@ -113,13 +112,13 @@ BrainSpark/                          # 根目录 (Monorepo)
   └── Dockerfile
   ```
 
-#### `apps/gateway-backend/` - Go 高并发网关 (8081)
+#### `apps/backend-gateway/` - Go 高并发网关 (8081)
 - **技术栈**: Go 1.21 + Gin + Redis + ClickHouse Go
 - **职责**: 测评游戏结果上报、API网关、限流熔断、实时监控
 - **核心包结构**:
   ```
-  gateway-backend/
-  ├── cmd/server/            # 入口
+  backend-gateway/
+  ├── main.go                # 入口
   ├── internal/
   │   ├── handler/          # HTTP处理器
   │   ├── middleware/       # 中间件(限流/日志/认证)
@@ -151,7 +150,7 @@ BrainSpark/                          # 根目录 (Monorepo)
 
 ### 3. 共享包
 
-#### `packages/types/` - 全局类型定义
+#### `packages/shared-types/` - 全局类型定义
 ```typescript
 // types/src/user.ts - 用户类型
 export interface User {
@@ -188,11 +187,6 @@ export interface CognitiveDimensions {
 }
 ```
 
-#### `packages/ui-components/` - 可复用组件库
-- 测评游戏通用组件
-- 数据可视化组件(ECharts封装)
-- 报告模板组件
-
 ## 🗄️ 数据库架构
 
 ```
@@ -202,7 +196,7 @@ export interface CognitiveDimensions {
                     └────────┬────────┘
                              │
 ┌─────────────┐    ┌─────────▼─────────┐    ┌─────────────────┐
-│ student-app  │───▶│  business-backend │───▶│  parent-app      │
+│ student-web  │───▶│  backend-business │───▶│  parent-web      │
 └─────────────┘    └─────────┬─────────┘    └─────────────────┘
                               │
                               │ 非结构化数据
@@ -213,7 +207,7 @@ export interface CognitiveDimensions {
                     └────────┬────────┘
                              │
                     ┌────────▼─────────┐
-                    │ gateway-backend   │ 高并发写入
+                    │ backend-gateway   │ 高并发写入
                     └────────┬────────┘
                              │ 实时统计
                              ▼
@@ -285,7 +279,6 @@ export interface CognitiveDimensions {
 packages:
   - 'apps/*'
   - 'packages/*'
-  - 'tools/*'
 ```
 
 ## 🚀 部署策略
@@ -293,30 +286,25 @@ packages:
 ### Docker Compose (开发环境)
 ```yaml
 services:
-  student-app:        # 前端
+  student-web:        # 前端
     build: ./apps/student-web
     ports: ["3000:3000"]
-  parent-app:         # 前端
+  parent-web:         # 前端
     build: ./apps/parent-web
     ports: ["3001:3001"]
-  teacher-app:        # 前端
+  teacher-web:        # 前端
     build: ./apps/teacher-web
     ports: ["3002:3002"]
   operator-web:       # 运营管理端
     build: ./apps/operator-web
     ports: ["3003:3003"]
   
-  business-backend:   # Java (含订单支付)
+  backend-business:   # Java (含订单支付)
     build: ./apps/backend-business
     ports: ["8080:8080"]
     depends_on: [mysql, mongodb]
   
-  order-service:      # Java (订单支付，二期独立部署)
-    build: ./apps/order-service
-    ports: ["8085:8085"]
-    depends_on: [mysql, redis]
-  
-  gateway-backend:    # Go
+  backend-gateway:    # Go
     build: ./apps/backend-gateway
     ports: ["8081:8081"]
     depends_on: [clickhouse, redis]
@@ -329,7 +317,7 @@ services:
 
 ### Kubernetes 部署
 ```
-infra/k8s/
+docs/infrastructure/
 ├── base/               # 公共配置
 ├── namespaces/         # 命名空间
 ├── services/           # Service 定义
@@ -347,11 +335,11 @@ infra/k8s/
 
 | 服务 | /health | /metrics |
 |------|---------|----------|
-| student-app | `/` | `/metrics` |
-| parent-app | `/` | `/metrics` |
-| teacher-app | `/` | `/metrics` |
-| business-backend | `/actuator/health` | `/actuator/prometheus` |
-| gateway-backend | `/health` | `/metrics` |
+| student-web | `/` | `/metrics` |
+| parent-web | `/` | `/metrics` |
+| teacher-web | `/` | `/metrics` |
+| backend-business | `/actuator/health` | `/actuator/prometheus` |
+| backend-gateway | `/health` | `/metrics` |
 | ai-service | `/health` | `/metrics` |
 
 ## ⚡ 开发工作流
@@ -364,8 +352,8 @@ pnpm install
 pnpm dev
 
 # 只启动指定服务
-pnpm --filter student-app dev
-pnpm --filter business-backend dev
+pnpm --filter student-web dev
+pnpm --filter backend-business dev
 
 # 构建所有
 pnpm build

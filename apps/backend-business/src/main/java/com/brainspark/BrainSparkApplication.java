@@ -1,4 +1,4 @@
-package com.braSpark;
+package com.brainspark;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

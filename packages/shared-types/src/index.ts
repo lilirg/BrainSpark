@@ -1,9 +1,11 @@
 export type { UserInfo } from './user'
-export type {
+export {
   AssessmentType,
+  BehaviorEventType,
+} from './assessment'
+export type {
   AssessmentTask,
   AssessmentResult,
-  BehaviorEventType,
   BehaviorRecord,
 } from './assessment'
 export type { CapabilityRadar, AIReport, TrainingPlanItem } from './report'
