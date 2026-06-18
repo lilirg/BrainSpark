@@ -1,9 +1,12 @@
 {
   "name": "@brainspark/typescript-config",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "description": "BrainSpark 共享 TypeScript 配置",
+  "main": "base.json",
   "files": [
     "base.json",
-    "vite.json"
+    "vue.json",
+    "node.json"
   ]
 }

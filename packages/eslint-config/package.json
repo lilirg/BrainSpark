@@ -1,14 +1,20 @@
 {
   "name": "@brainspark/eslint-config",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "description": "BrainSpark 共享 ESLint 配置",
   "main": "index.js",
-  "dependencies": {
-    "eslint": "^8.56.0",
-    "@typescript-eslint/eslint-plugin": "^6.17.0",
-    "@typescript-eslint/parser": "^6.17.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-vue": "^9.19.2",
-    "eslint-plugin-import": "^2.29.1"
+  "files": [
+    "index.js",
+    "vue.js"
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "eslint-plugin-vue": "^9.17.0"
+  },
+  "peerDependencies": {
+    "eslint": ">=8.0.0"
   }
 }

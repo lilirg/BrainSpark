@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'brainspark-gateway'
+    static_configs:
+      - targets: ['gateway:8080']
+    metrics_path: '/api/metrics/prometheus'
+
+  - job_name: 'brainspark-business'
+    static_configs:
+      - targets: ['business:8081']
+    metrics_path: '/api/metrics/prometheus'
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

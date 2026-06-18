@@ -17,19 +17,29 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 50)
     private String username;
 
     @Column(nullable = false)
     private String password;
 
+    @Column(unique = true, length = 100)
+    private String email;
+
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private Role role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserStatus status = UserStatus.ACTIVE;
 
     private String realName;
 
     private String avatar;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -37,13 +47,20 @@ public class User {
     private LocalDateTime updatedAt;
 
     public enum Role {
-        ADMIN, TEACHER, STUDENT, PARENT
+        ADMIN, MANAGER, EMPLOYEE, TEACHER, PARENT, STUDENT
+    }
+
+    public enum UserStatus {
+        ACTIVE, INACTIVE, LOCKED
     }
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (status == null) {
+            status = UserStatus.ACTIVE;
+        }
     }
 
     @PreUpdate

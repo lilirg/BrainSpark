@@ -2,3 +2,7 @@ packages:
   - 'apps/*'
   - 'packages/*'
   - 'infrastructure/*'
+
+onlyBuiltDependencies:
+  - esbuild
+  - vue-demi

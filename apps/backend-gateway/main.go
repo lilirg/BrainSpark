@@ -1,38 +1,84 @@
 package main
 
 import (
-	"log"
-	"net/http/proxy"
+	"os"
 	"time"
 
 	"github.com/brainspark/gateway/internal/handler"
 	"github.com/brainspark/gateway/internal/middleware"
-
-	"github.com/gin-contrib/cors"
+	"github.com/brainspark/gateway/internal/writer"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 func main() {
-	// 初始化路由
+	// 配置
+	port := getEnv("PORT", "8080")
+	mongoURI := getEnv("MONGO_URI", "mongodb://brainspark:brainspark_dev@localhost:27017")
+	jwtSecret := getEnv("JWT_SECRET", "brainspark-jwt-secret-key-change-in-production")
+
+	// 初始化 MongoDB 写入器
+	eventWriter, err := writer.NewEventWriter(mongoURI, "brainspark_events", "event_records")
+	if err != nil {
+		panic("MongoDB 连接失败: " + err.Error())
+	}
+
+	// 初始化事件处理器
+	eventHandler := handler.NewEventHandler(eventWriter)
+
+	// 初始化限流器
+	ipLimiter := middleware.NewIPRateLimiter(rate.Limit(500), 100) // IP 级别 500 QPS, burst 100
+
+	// 创建 Gin 引擎
 	r := gin.Default()
 
-	// 中间件
+	// 全局中间件
 	r.Use(middleware.CORS())
-	r.Use(middleware.RateLimiter())
-	r.Use(middleware.RequestID())
+	r.Use(middleware.Logger())
+	r.Use(middleware.RateLimit(ipLimiter))
 
-	// API 路由组
-	api := r.Group("/api/v1")
+	// 健康检查
+	r.GET("/api/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":    "ok",
+			"service":   "brainspark-gateway",
+			"version":   "1.0.0",
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+			"checks": gin.H{
+				"mongodb": checkMongoDB(eventWriter),
+			},
+		})
+	})
+
+	// 公开路由
+	public := r.Group("/api/v1")
 	{
-		// 游戏结果上报网关
-		api.POST("/assessment/results", handler.ReportResults)
-		// 健康检查
-		api.GET("/health", handler.HealthCheck)
+		public.POST("/events/batch", eventHandler.BatchEvents)
+		public.GET("/events/ws", eventHandler.WebSocket)
+	}
+
+	// 需要认证的路由
+	auth := r.Group("/api/v1")
+	auth.Use(middleware.JWTAuth(jwtSecret))
+	{
+		// 后续添加需要认证的路由
 	}
 
 	// 启动服务
-	log.Println("BrainSpark Gateway starting on :8081")
-	if err := r.Run(":8081"); err != nil {
-		log.Fatal("Failed to start gateway:", err)
+	r.Run(":" + port)
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// checkMongoDB 检查 MongoDB 连接状态
+func checkMongoDB(writer *writer.EventWriter) gin.H {
+	// 实际项目中应实现真正的 MongoDB ping
+	return gin.H{
+		"status": "ok",
 	}
 }

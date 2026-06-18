@@ -9,16 +9,41 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
+    "lint": {
+      "outputs": []
+    },
     "test": {
       "dependsOn": ["build"],
       "outputs": []
     },
-    "lint": {
-      "outputs": []
+    "@brainspark/shared-types#build": {
+      "outputs": ["dist/**"]
     },
-    "typecheck": {
-      "dependsOn": ["^typecheck"],
-      "outputs": []
+    "@brainspark/api-client#build": {
+      "dependsOn": ["@brainspark/shared-types#build"],
+      "outputs": ["dist/**"]
+    },
+    "@brainspark/typescript-config#build": {
+      "cache": false
+    },
+    "@brainspark/eslint-config#build": {
+      "cache": false
+    },
+    "@brainspark/student#build": {
+      "dependsOn": ["@brainspark/shared-types#build", "@brainspark/api-client#build"],
+      "outputs": ["dist/**"]
+    },
+    "@brainspark/parent#build": {
+      "dependsOn": ["@brainspark/shared-types#build", "@brainspark/api-client#build"],
+      "outputs": ["dist/**"]
+    },
+    "@brainspark/teacher#build": {
+      "dependsOn": ["@brainspark/shared-types#build", "@brainspark/api-client#build"],
+      "outputs": ["dist/**"]
+    },
+    "@brainspark/operator#build": {
+      "dependsOn": ["@brainspark/shared-types#build", "@brainspark/api-client#build"],
+      "outputs": ["dist/**"]
     }
   }
 }
