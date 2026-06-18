@@ -1,4 +1,4 @@
-package com.braSpark.entity;
+package com.brainspark.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;

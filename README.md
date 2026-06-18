@@ -31,10 +31,6 @@ BrainSpark/                              # 根目录 (Monorepo)
 │   ├── api-client/                      # API 客户端库
 │   ├── eslint-config/                   # ESLint 统一配置
 │   └── typescript-config/               # TypeScript 共享配置
-├── infrastructure/                        # DevOps 配置
-│   ├── docker/                          # Docker Compose 配置
-│   ├── k8s/                             # Kubernetes 部署
-│   └── nginx/                           # Nginx 反向代理
 ├── docs/                                  # 项目文档
 │   ├── product/                         # 产品设计文档
 │   ├── architecture/                    # 架构设计文档
@@ -43,8 +39,6 @@ BrainSpark/                              # 根目录 (Monorepo)
 │   ├── infrastructure/                  # 基础设施文档
 │   ├── quality/                         # 质量保障文档
 │   └── operations/                      # 运维文档
-├── scripts/                               # 工具脚本
-└── .github/workflows/                     # CI/CD 配置
 ```
 
 ## 🛠 技术栈
@@ -83,14 +77,19 @@ pnpm install
 # 一键启动所有前端服务
 pnpm dev:all
 
-# 或单独启动某个应用
+# 或单独启动某个前端应用
 pnpm dev:student        # 学生端 (localhost:3000)
 pnpm dev:parent         # 家长端 (localhost:3001)
 pnpm dev:teacher        # 教师端 (localhost:3002)
 pnpm dev:operator       # 运营端 (localhost:3003)
 ```
 
-> 注: 后端服务 (backend-business, backend-gateway, ai-service) 需分别进入对应目录启动。
+> **重要**: 后端服务**不能**通过 `pnpm dev:all` 启动，需分别进入对应目录手动启动：
+> ```bash
+> cd apps/backend-business && mvn spring-boot:run    # 业务后端 :8080
+> cd apps/backend-gateway && go run main.go           # 网关 :8081
+> cd apps/ai-service && uvicorn main:app --reload     # AI 服务 :8001
+> ```
 
 ### 构建与测试
 

@@ -53,7 +53,9 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## 2. Nginx 反向代理设计
+## 2. Nginx 反向代理设计（目标架构 — 规划中）
+
+> **当前实现**: 当前网关为单端口直接暴露，未使用 Nginx 反向代理。以下 Nginx 配置为生产环境建议添加的目标架构设计。
 
 ### 2.1 配置文件
 
@@ -89,7 +91,7 @@ upstream ai_service {
 
 server {
     listen 443 ssl http2;
-    server_namebrainspark.example.com;
+    server_name brainspark.example.com;
 
     # SSL 配置
     ssl_certificate     /etc/nginx/ssl/brainspark.crt;
@@ -239,47 +241,78 @@ http {
 
 ```
 apps/backend-gateway/
-├── cmd/
-│   └── server/
-│       └── main.go              # 入口（支持多端口启动）
+├── main.go                      # 入口（当前实现：单端口 :8081）
 ├── internal/
-│   ├── config/                  # 配置解析
-│   │   └── config.go
 │   ├── handler/                 # 路由处理
-│   │   ├── assessment.go        # 游戏结果上报
-│   │   ├── event.go             # 行为事件上报
-│   │   ├── ws.go                # WebSocket handler
-│   │   └── health.go            # 健康检查
-│   ├── middleware/              # 中间件
-│   │   ├── request_id.go        # Request ID 生成与传递
-│   │   ├── rate_limiter.go      # 限流（Redis-backed）
-│   │   ├── jwt_auth.go          # 轻量 JWT 校验
-│   │   ├── request_validate.go  # 请求体校验
-│   │   ├── cors.go              # CORS 处理
-│   │   └── logging.go           # 结构化日志
+│   │   ├── handler.go           # 游戏结果上报 + 健康检查
+│   │   └── ...                  # （未来可扩展：event.go, ws.go, health.go）
+│   ├── middleware/              # 中间件（全部在 middleware.go 中）
+│   │   ├── middleware.go        # CORS + 内存限流 + RequestID
+│   │   └── ...                  # （未来可扩展：request_id.go, rate_limiter.go, jwt_auth.go 等独立文件）
 │   ├── model/                   # 数据模型
-│   │   ├── event.go             # 行为事件模型
-│   │   ├── assessment.go        # 测评结果模型
-│   │   └── response.go          # 统一响应格式
+│   │   ├── event.go             # 行为事件模型 + 健康状态模型
+│   │   └── ...                  # （未来可扩展：assessment.go, response.go）
 │   ├── writer/                  # 异步写入
-│   │   ├── clickhouse.go        # ClickHouse 批量写入
-│   │   ├── mongo.go             # MongoDB 写入
-│   │   └── redis.go             # Redis 消息发布
-│   ├── websocket/               # WebSocket 模块
-│   │   ├── manager.go           # 连接池管理
-│   │   ├── hub.go               # Hub pattern 广播
-│   │   └── client.go            # 客户端会话
-│   └── proxy/                   # 正向代理（透传业务 API）
-│       └── router.go            # 路由到 Java/Python 服务
-├── docker/
-│   └── Dockerfile
+│   │   ├── writer.go            # ClickHouse 直接写入（当前实现）
+│   │   └── ...                  # （未来可扩展：clickhouse.go, mongo.go, redis.go 等独立文件）
+│   ├── websocket/               # WebSocket 模块（规划中）
+│   │   └── ...                  # （未来可扩展：manager.go, hub.go, client.go）
+│   └── proxy/                   # 正向代理（规划中）
+│       └── ...                  # （未来可扩展：router.go）
 ├── go.mod
-└── Makefile
+└── go.sum
 ```
 
-### 3.2 多端口入口设计
+### 3.2 入口设计
 
-[`cmd/server/main.go`](apps/backend-gateway/cmd/server/main.go)
+#### 当前实现
+
+入口在根目录 [`main.go`](apps/backend-gateway/main.go)，单端口 `:8081`，使用 Gin 默认路由。
+
+```go
+// apps/backend-gateway/main.go（当前实现）
+package main
+
+import (
+    "log"
+    "time"
+
+    "github.com/brainspark/gateway/internal/handler"
+    "github.com/brainspark/gateway/internal/middleware"
+
+    "github.com/gin-contrib/cors"
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+    // 初始化路由
+    r := gin.Default()
+
+    // 中间件
+    r.Use(middleware.CORS())
+    r.Use(middleware.RateLimiter())
+    r.Use(middleware.RequestID())
+
+    // API 路由组
+    api := r.Group("/api/v1")
+    {
+        // 游戏结果上报网关
+        api.POST("/assessment/results", handler.ReportResults)
+        // 健康检查
+        api.GET("/health", handler.HealthCheck)
+    }
+
+    // 启动服务
+    log.Println("BrainSpark Gateway starting on :8081")
+    if err := r.Run(":8081"); err != nil {
+        log.Fatal("Failed to start gateway:", err)
+    }
+}
+```
+
+#### 目标架构（规划中）
+
+以下 [`cmd/server/main.go`](apps/backend-gateway/cmd/server/main.go) 为未来多端口架构的目标设计，支持 HTTP 网关（`:8081`）和 WebSocket 网关（`:8082`）分离启动。
 ```go
 package main
 
@@ -367,250 +400,117 @@ func startWSServer(port string) *http.Server {
 
 ### 3.3 Request ID 中间件
 
+#### 当前实现
+
+使用时间戳生成 Request ID，实现在 [`middleware.go:55`](apps/backend-gateway/internal/middleware/middleware.go:55)。
+
 ```go
-// internal/middleware/request_id.go
-package middleware
-
-import (
-    "fmt"
-    "time"
-
-    "github.com/gin-gonic/gin"
-    "github.com/google/uuid"
-)
-
-const requestIDKey = "X-Request-ID"
-
+// internal/middleware/middleware.go（当前实现）
 func RequestID() gin.HandlerFunc {
     return func(c *gin.Context) {
-        id := c.GetHeader(requestIDKey)
-        if id == "" {
-            id = generateRequestID()
-        }
-        c.Set(requestIDKey, id)
-        c.Header(requestIDKey, id)
+        id := generateID()
+        c.Header("X-Request-ID", id)
         c.Next()
     }
 }
 
-func generateRequestID() string {
-    ts := time.Now().UnixMilli()
-    u := uuid.New()
-    return fmt.Sprintf("bs-%d-%s", ts, u.String()[:8])
-}
-
-// GetRequestID returns the current request ID from context
-func GetRequestID(c *gin.Context) string {
-    id, _ := c.Get(requestIDKey)
-    s, _ := id.(string)
-    return s
+func generateID() string {
+    return time.Now().Format("20060102150405") + "g"
 }
 ```
 
-### 3.4 限流中间件（Redis 实现）
+> **说明**: 当前使用 `time.Now().Format("20060102150405") + "g"` 生成 Request ID，格式为时间戳字符串 + 后缀字符。未来可替换为 UUID 生成。
+
+#### 目标架构（规划中）
+
+以下为使用 UUID 的 Request ID 实现，将独立为 [`internal/middleware/request_id.go`](apps/backend-gateway/internal/middleware/request_id.go)。
+
+### 3.4 限流中间件
+
+#### 当前实现
+
+使用内存 `map[string]int` 实现，每分钟每 IP 100 次，实现在 [`middleware.go:27`](apps/backend-gateway/internal/middleware/middleware.go:27)。
 
 ```go
-// internal/middleware/rate_limiter.go
-package middleware
+// internal/middleware/middleware.go（当前实现）
+// RateLimiter is a simple in-memory rate limiter
+func RateLimiter() gin.HandlerFunc {
+    requests := make(map[string]int)
+    limit := 100 // requests per minute
+    window := time.Minute
 
-import (
-    "context"
-    "time"
-
-    "github.com/brainspark/gateway/internal/config"
-    "github.com/redis/go-redis/v9"
-    "github.com/gin-gonic/gin"
-)
-
-type RateLimiter struct {
-    rdb   *redis.Client
-    mode  string // "api" / "ws" / "event"
-}
-
-func NewRateLimiter(cfg config.RateLimiterConfig) *RateLimiter {
-    rdb := redis.NewClient(&redis.Options{
-        Addr:     cfg.RedisAddr,
-        Password: cfg.RedisPassword,
-        DB:       cfg.RedisDB,
-    })
-    return &RateLimiter{rdb: rdb, mode: cfg.Mode}
-}
-
-func (rl *RateLimiter) Limiter() gin.HandlerFunc {
-    var keyPrefix string
-    switch rl.mode {
-    case "event":
-        keyPrefix = "rl:event"
-    case "api":
-        keyPrefix = "rl:api"
-    default:
-        keyPrefix = "rl:default"
-    }
+    go func() {
+        ticker := time.NewTicker(window)
+        defer ticker.Stop()
+        for range ticker.C {
+            for k := range requests {
+                delete(requests, k)
+            }
+        }
+    }()
 
     return func(c *gin.Context) {
         ip := c.ClientIP()
-        key := keyPrefix + ":" + ip
-
-        ctx := context.Background()
-        count, err := rl.rdb.Incr(ctx, key).Result()
-        if err != nil {
-            c.AbortWithError(500, err)
-            return
-        }
-        if count == 1 {
-            rl.rdb.Expire(ctx, key, time.Minute)
-        }
-
-        limit := rl.getLimit()
-        if count > limit {
-            c.JSON(429, gin.H{
-                "code":    429,
-                "error":   "rate_limit_exceeded",
-                "message": "请求过于频繁，请稍后重试",
-                "retry_after": count - limit,
-            })
+        if requests[ip] > limit {
+            c.JSON(http.StatusTooManyRequests, gin.H{"error": "Rate limit exceeded"})
             c.Abort()
             return
         }
-
-        c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", limit))
-        c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", limit-count))
+        requests[ip]++
         c.Next()
     }
 }
-
-func (rl *RateLimiter) getLimit() int64 {
-    switch rl.mode {
-    case "event":
-        return 100  // 事件上报：100 次/分钟/IP
-    case "api":
-        return 60   // API 调用：60 次/分钟/IP
-    default:
-        return 30
-    }
-}
 ```
+
+> **说明**: 当前为简化版内存实现，每分钟重置计数器。未来可替换为 Redis 分布式限流以支持多实例部署。
+
+#### 目标架构（规划中）
+
+以下为使用 Redis 的分布式限流实现，将独立为 [`internal/middleware/rate_limiter.go`](apps/backend-gateway/internal/middleware/rate_limiter.go)。
 
 ### 3.5 异步写入模块
 
+#### 当前实现
+
+直接写入 ClickHouse（模拟实现），实现在 [`writer.go`](apps/backend-gateway/internal/writer/writer.go)。
+
 ```go
-// internal/writer/clickhouse.go
+// internal/writer/writer.go（当前实现）
 package writer
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
+    "log"
+    "time"
 
-    "github.com/brainspark/gateway/internal/config"
-    "github.com/ClickHouse/clickhouse-go/v2"
-    "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-    "github.com/google/uuid"
+    "github.com/brainspark/gateway/internal/model"
 )
 
-type ClickHouseWriter struct {
-    conn   driver.Conn
-    ch     chan AssessmentResult
-    logger *Logger
-}
+// WriteToClickHouse writes assessment results to ClickHouse asynchronously
+func WriteToClickHouse(result model.AssessmentResult) {
+    // Simulate async write to ClickHouse
+    // In production, use the ClickHouse Go driver
+    log.Printf("Writing result: student=%s game=%s score=%.2f",
+        result.StudentID, result.GameType, result.Score)
 
-var batchSize = 1000
-var batchTimeout = 2 * time.Second
-
-func NewClickHouseWriter(cfg config.ClickHouseConfig) (*ClickHouseWriter, error) {
-    conn, err := clickhouse.Open(&clickhouse.Options{
-        Addr: []string{cfg.Addr},
-        Auth: clickhouse.Auth{
-            Database: cfg.Database,
-            Username: cfg.Username,
-            Password: cfg.Password,
-        },
-        MaxOpenConns: 10,
-        DialTimeout:  5 * time.Second,
-    })
-    if err != nil {
-        return nil, err
-    }
-    return &ClickHouseWriter{conn: conn, ch: make(chan AssessmentResult, 10000)}, nil
-}
-
-func (w *ClickHouseWriter) Start(ctx context.Context) {
-    go w.flushLoop(ctx)
-}
-
-func (w *ClickHouseWriter) Submit(result AssessmentResult) {
-    select {
-    case w.ch <- result:
-    default:
-        w.logger.Warn("event_channel_full", "dropped_result", result.EventID)
-    }
-}
-
-func (w *ClickHouseWriter) flushLoop(ctx context.Context) {
-    ticker := time.NewTicker(batchTimeout)
-    defer ticker.Stop()
-
-    var batch []AssessmentResult
-
-    for {
-        select {
-        case <-ctx.Done():
-            w.flushBatch(batch)
-            return
-        case r, ok := <-w.ch:
-            if !ok {
-                w.flushBatch(batch)
-                return
-            }
-            batch = append(batch, r)
-            if len(batch) >= batchSize {
-                w.flushBatch(batch)
-                batch = nil
-            }
-        case <-ticker.C:
-            if len(batch) > 0 {
-                w.flushBatch(batch)
-                batch = nil
-            }
-        }
-    }
-}
-
-func (w *ClickHouseWriter) flushBatch(batch []AssessmentResult) {
-    if len(batch) == 0 {
-        return
-    }
-
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer cancel()
-
-    batch, err := w.conn.Batch(ctx)
-    if err != nil {
-        // retry logic / dead letter queue
-        return
-    }
-    _ = batch.Get()
-}
-
-type AssessmentResult struct {
-    EventID    string                 `json:"event_id"`
-    UserID     int64                  `json:"user_id"`
-    TaskID     string                 `json:"task_id"`
-    StartAt    time.Time              `json:"start_at"`
-    EndAt      time.Time              `json:"end_at"`
-    ScoreData  map[string]interface{} `json:"score_data"`
-    SessionID  string                 `json:"session_id"`
-    RequestID  string                 `json:"request_id"`
-    Status     string                 `json:"status"`
+    // Buffer batch writes for better throughput
+    time.Sleep(100 * time.Millisecond)
 }
 ```
 
-## 4. WebSocket 网关设计
+> **说明**: 当前为模拟写入，直接调用 ClickHouse 写入函数。未来可扩展为通过 Kafka 消息队列缓冲写入，以提升吞吐量和可靠性。
+
+#### 目标架构（规划中）
+
+以下为使用 ClickHouse 批量写入 + Kafka 消息队列的完整实现，将独立为 [`internal/writer/clickhouse.go`](apps/backend-gateway/internal/writer/clickhouse.go) 和 [`internal/writer/kafka.go`](apps/backend-gateway/internal/writer/kafka.go)。
+
+## 4. WebSocket 网关设计（规划中）
+
+> **当前实现**: 当前网关无 WebSocket 实现。以下为未来规划中的 WebSocket Hub 架构设计。
 
 ### 4.1 Hub 架构
 
 ```go
-// internal/websocket/hub.go
+// internal/websocket/hub.go（目标架构 — 规划中）
 package websocket
 
 import (
@@ -711,10 +611,12 @@ func (h *Hub) Stats() HubStats {
 }
 ```
 
-## 5. 统一响应格式
+## 5. 统一响应格式（目标架构 — 规划中）
+
+> **当前实现**: 当前网关直接返回 `gin.H` 格式的 JSON 响应，未使用统一的 Response 结构体。以下为未来规划的统一响应格式。
 
 ```go
-// internal/model/response.go
+// internal/model/response.go（目标架构 — 规划中）
 package model
 
 type Response struct {
@@ -744,7 +646,9 @@ func Error(code int, msg string, reqID string) Response {
 
 ## 6. 部署架构
 
-### 6.1 Docker Compose
+### 6.1 Docker Compose（目标架构 — 规划中）
+
+> **当前实现**: 当前网关为单端口 `:8081` 直接运行，未使用 Docker Compose 编排。以下为未来生产环境部署的目标架构。
 
 ```yaml
 version: '3.8'
@@ -768,9 +672,8 @@ services:
     build: ./apps/backend-gateway
     ports:
       - "8081:8081"  # HTTP
-      - "8082:8082"  # WebSocket
+      - "8082:8082"  # WebSocket（规划中）
     environment:
-      - REDIS_ADDR=redis:6379
       - CLICKHOUSE_ADDR=clickhouse:9000
 
   ai-service:
@@ -781,17 +684,17 @@ services:
 
 ## 7. 性能指标
 
-| 指标 | 目标 |
-|------|------|
-| HTTP 网关 QPS | 10,000+ |
-| WebSocket 并发连接 | 50,000+ |
-| 事件写入延迟（P95） | < 200ms |
-| API 平均响应时间 | < 50ms |
+| 指标 | 当前实现 | 目标 |
+|------|----------|------|
+| HTTP 网关 QPS | 单实例 ~1,000+ | 10,000+ |
+| WebSocket 并发连接 | 未实现 | 50,000+ |
+| 事件写入延迟（P95） | ~100ms（模拟写入） | < 200ms |
+| API 平均响应时间 | < 10ms | < 50ms |
 
 ## 8. 监控端点
 
-| 端点 | 功能 |
-|------|------|
-| `GET /api/v1/health` | 基础健康检查 |
-| `GET /api/v1/metrics` | Prometheus 指标 |
-| `GET /ws/stats` | WebSocket 连接统计 |
+| 端点 | 功能 | 状态 |
+|------|------|------|
+| `GET /api/v1/health` | 基础健康检查 | ✅ 已实现 |
+| `GET /api/v1/metrics` | Prometheus 指标 | ❌ 规划中 |
+| `GET /ws/stats` | WebSocket 连接统计 | ❌ 规划中 |

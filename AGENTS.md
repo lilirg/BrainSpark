@@ -28,9 +28,8 @@
 ```
 ├── apps/           # 独立部署的应用 (student, parent, teacher, backend-*, ai-service)
 ├── packages/       # 共享包 (shared-types, api-client, eslint-config, typescript-config)
-├── infra/          # Docker / K8s / Nginx 部署配置
 ├── docs/           # 项目文档 (scheme.md, dev-guide/, api/)
-└── scripts/        # 构建和运维脚本
+└── plans/          # 设计方案和规划文档
 ```
 
 ### 包管理
@@ -65,7 +64,7 @@
 
 ## Go 网关约定
 
-- 入口 `cmd/server/main.go`，内部代码在 `internal/`
+- 入口 [`main.go`](apps/backend-gateway/main.go)，内部代码在 `internal/`
 - 使用 Gin 路由 + 自定义中间件 (CORS, 限流, 日志)
 - Handler 负责绑定 JSON，Service 封装逻辑，Writer 处理存储
 - 配置文件使用 `.env` / YAML

@@ -1,0 +1,177 @@
+# BrainSpark 开发环境 Docker Compose 配置
+# 包含全部数据库服务：MySQL、Redis、MongoDB、ClickHouse、Milvus
+
+version: '3.8'
+
+x-common-vars: &common-vars
+  MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-brainspark_dev}
+  MYSQL_DATABASE: ${MYSQL_DATABASE:-brainspark}
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-brainspark_redis}
+
+services:
+  # ============ MySQL 8.0 - 核心业务数据 ============
+  mysql:
+    image: mysql:8.0
+    container_name: brainspark-mysql-dev
+    command: --default-authentication-plugin=caching_sha2_password
+    environment:
+      <<: *common-vars
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./mysql/conf.d/dev.cnf:/etc/mysql/conf.d/dev.cnf
+    networks:
+      - brainspark-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ============ Redis 7 - 缓存/锁/限流 ============
+  redis:
+    image: redis:7-alpine
+    container_name: brainspark-redis-dev
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD:-brainspark_redis}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/dev.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - brainspark-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-brainspark_redis}", "PING"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ============ MongoDB 7 - 行为事件日志 ============
+  mongodb:
+    image: mongo:7
+    container_name: brainspark-mongo-dev
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-brainspark_dev}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-brainspark_behavior}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - brainspark-dev
+    restart: unless-stopped
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet -u ${MONGO_INITDB_ROOT_USERNAME:-root} -p ${MONGO_INITDB_ROOT_PASSWORD:-brainspark_dev} --authenticationDatabase admin
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ============ ClickHouse - OLAP 分析 ============
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+    container_name: brainspark-clickhouse-dev
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    networks:
+      - brainspark-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ============ Milvus 2 - 向量检索 (RAG 知识库) ============
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.12
+    container_name: brainspark-etcd-dev
+    command: etcd -name etcd0 -listen-client-urls http://0.0.0.0:2379 -advertise-client-urls http://etcd:2379
+    ports:
+      - "2379:2379"
+    volumes:
+      - etcd_data:/etcd
+    networks:
+      - brainspark-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  minio:
+    image: minio/minio:latest
+    container_name: brainspark-minio-dev
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - brainspark-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  milvus:
+    image: milvusdb/milvus:v2.4.0
+    container_name: brainspark-milvus-dev
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - brainspark-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+# ============ 数据卷 ============
+volumes:
+  mysql_data:
+  redis_data:
+  mongo_data:
+  clickhouse_data:
+  etcd_data:
+  minio_data:
+
+# ============ 网络 ============
+networks:
+  brainspark-dev:
+    driver: bridge

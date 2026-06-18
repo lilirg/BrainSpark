@@ -1,5 +1,5 @@
 {
-  "name": "@brain-spark/api-client",
+  "name": "@brainspark/api-client",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
     "axios": "^1.6.2"
   },
   "devDependencies": {
-    "@brain-spark/shared-types": "workspace:*",
-    "@brain-spark/typescript-config": "workspace:*",
-    "@brain-spark/eslint-config": "workspace:*"
+    "@brainspark/shared-types": "workspace:*",
+    "@brainspark/typescript-config": "workspace:*",
+    "@brainspark/eslint-config": "workspace:*"
   }
 }

@@ -1,0 +1,37 @@
+# BrainSpark MySQL 开发环境配置
+# 适用于本地开发，降低资源占用
+
+[client]
+default-character-set = utf8mb4
+
+[mysql]
+default-character-set = utf8mb4
+
+[mysqld]
+# 字符集
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# 连接
+max_connections = 200
+max_allowed_packet = 64M
+wait_timeout = 28800
+interactive_timeout = 28800
+
+# 开发环境降低内存占用
+innodb_buffer_pool_size = 256M
+innodb_log_file_size = 64M
+innodb_flush_log_at_trx_commit = 2
+innodb_flush_method = O_DIRECT
+
+# 查询缓存（MySQL 8.0 已废弃，保留兼容）
+# query_cache_type = 0
+
+# 日志
+general_log = 0
+slow_query_log = 1
+long_query_time = 2
+log_error = /var/lib/mysql/error.log
+
+# SQL 模式
+sql_mode = STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
