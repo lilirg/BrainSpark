@@ -10,6 +10,7 @@ import (
 )
 
 type EventWriter struct {
+	client     *mongo.Client
 	collection *mongo.Collection
 }
 
@@ -28,7 +29,17 @@ func NewEventWriter(mongoURI, dbName, collectionName string) (*EventWriter, erro
 	}
 
 	collection := client.Database(dbName).Collection(collectionName)
-	return &EventWriter{collection: collection}, nil
+	return &EventWriter{
+		client:     client,
+		collection: collection,
+	}, nil
+}
+
+// Ping 检查 MongoDB 连接状态
+func (w *EventWriter) Ping() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return w.client.Ping(ctx, nil)
 }
 
 // 批量写入事件

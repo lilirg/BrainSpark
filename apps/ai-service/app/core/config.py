@@ -1,27 +1,39 @@
-import os
-from dotenv import load_dotenv
+"""
+AI 服务配置
+"""
+from pydantic_settings import BaseSettings
+from typing import Optional
 
-load_dotenv()
 
-class Settings:
-    # AI Models
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    OPENAI_BASE_URL: str = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-    DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "gpt-4o")
-    
-    # Vector DB
-    MILVUS_URI: str = os.getenv("MILVUS_URI", "http://localhost:19530")
-    MILVUS_COLLECTION: str = os.getenv("MILVUS_COLLECTION", "education_knowledge")
-    
-    # Redis
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-    
-    # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost/brainspark")
-    
-    # API
-    APP_NAME: str = "BrainSpark AI Service"
-    VERSION: str = "0.1.0"
-    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+class Settings(BaseSettings):
+    # 服务配置
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
+    DEBUG: bool = True
+
+    # Milvus 配置
+    MILVUS_HOST: str = "localhost"
+    MILVUS_PORT: int = 19530
+
+    # LLM 配置
+    LLM_PROVIDER: str = "openai"
+    LLM_API_KEY: Optional[str] = None
+    LLM_MODEL: str = "gpt-4"
+    LLM_TEMPERATURE: float = 0.7
+    LLM_MAX_TOKENS: int = 2048
+
+    # 知识库配置
+    KNOWLEDGE_COLLECTION: str = "brainspark_knowledge"
+    EMBEDDING_DIMENSION: int = 768
+    TOP_K_RESULTS: int = 5
+
+    # 报告配置
+    REPORT_OUTPUT_DIR: str = "./reports"
+    MAX_REPORT_LENGTH: int = 5000
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
 
 settings = Settings()

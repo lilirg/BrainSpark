@@ -4,32 +4,26 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
-      redirect: '/login',
-    },
-    {
       path: '/login',
       name: 'Login',
-      component: () => import('@/views/LoginView.vue'),
+      component: () => import('../views/Login.vue')
     },
     {
-      path: '/assessment',
+      path: '/',
+      name: 'Home',
+      component: () => import('../views/HomeView.vue')
+    },
+    {
+      path: '/assessment/:id',
       name: 'Assessment',
-      component: () => import('@/views/AssessmentView.vue'),
-      children: [
-        {
-          path: ':taskId',
-          name: 'AssessmentGame',
-          component: () => import('@/views/AssessmentGameView.vue'),
-        },
-      ],
+      component: () => import('../views/AssessmentView.vue')
     },
     {
-      path: '/report/:assessmentId',
-      name: 'Report',
-      component: () => import('@/views/ReportView.vue'),
-    },
-  ],
+      path: '/result/:sessionId',
+      name: 'Result',
+      component: () => import('../views/ResultView.vue')
+    }
+  ]
 })
 
 export default router

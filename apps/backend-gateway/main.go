@@ -77,7 +77,12 @@ func getEnv(key, defaultValue string) string {
 
 // checkMongoDB 检查 MongoDB 连接状态
 func checkMongoDB(writer *writer.EventWriter) gin.H {
-	// 实际项目中应实现真正的 MongoDB ping
+	if err := writer.Ping(); err != nil {
+		return gin.H{
+			"status": "down",
+			"error":  err.Error(),
+		}
+	}
 	return gin.H{
 		"status": "ok",
 	}

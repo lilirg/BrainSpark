@@ -47,6 +47,16 @@ export interface User {
   updatedAt: string
 }
 
+export interface UserInfo {
+  id: string
+  name: string
+  age: number
+  grade: string
+  avatar?: string
+  createdAt: string
+  updatedAt: string
+}
+
 // ==================== 学生实体 ====================
 
 export interface Student {
