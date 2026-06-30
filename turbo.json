@@ -29,20 +29,20 @@
     "@brainspark/eslint-config#build": {
       "cache": false
     },
-    "@brainspark/student#build": {
-      "dependsOn": ["@brainspark/shared-types#build", "@brainspark/api-client#build"],
+    "@brainspark/student-web#build": {
+      "dependsOn": ["@brainspark/shared-types#build"],
       "outputs": ["dist/**"]
     },
-    "@brainspark/parent#build": {
-      "dependsOn": ["@brainspark/shared-types#build", "@brainspark/api-client#build"],
+    "@brainspark/parent-web#build": {
+      "dependsOn": ["@brainspark/shared-types#build"],
       "outputs": ["dist/**"]
     },
-    "@brainspark/teacher#build": {
-      "dependsOn": ["@brainspark/shared-types#build", "@brainspark/api-client#build"],
+    "@brainspark/teacher-web#build": {
+      "dependsOn": ["@brainspark/shared-types#build"],
       "outputs": ["dist/**"]
     },
-    "@brainspark/operator#build": {
-      "dependsOn": ["@brainspark/shared-types#build", "@brainspark/api-client#build"],
+    "@brainspark/operator-web#build": {
+      "dependsOn": ["@brainspark/shared-types#build"],
       "outputs": ["dist/**"]
     }
   }

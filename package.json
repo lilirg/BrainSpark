@@ -10,6 +10,7 @@
     "dev:student": "turbo dev --filter=apps/student-web",
     "dev:parent": "turbo dev --filter=apps/parent-web",
     "dev:teacher": "turbo dev --filter=apps/teacher-web",
+    "dev:operator": "turbo dev --filter=apps/operator-web",
     "dev:business": "turbo dev --filter=apps/backend-business",
     "dev:gateway": "turbo dev --filter=apps/backend-gateway",
     "dev:ai": "turbo dev --filter=apps/ai-service",
@@ -32,10 +33,5 @@
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "vue-demi"
-    ]
-  }
+  "packageManager": "pnpm@11.8.0"
 }
