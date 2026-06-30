@@ -65,9 +65,9 @@ onUnmounted(() => {
 
 function getTaskIcon(type: string): string {
   const icons: Record<string, string> = {
-    SCHULTER: '🔢',
-    DIGITAL_SPAN: '🔢',
-    PATTERN_REASONING: '🧩'
+    SCHULTE_GRID: '🔢',
+    NUMBER_SPAN: '🔢',
+    PATTERN_RECOGNITION: '🧩'
   }
   return icons[type] || '🎮'
 }

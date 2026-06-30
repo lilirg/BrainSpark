@@ -30,21 +30,57 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAssessmentStore } from '../stores/assessment'
 
 const router = useRouter()
-const score = ref(85)
-const time = ref('45.2秒')
-const accuracy = ref(92)
-const level = ref('优秀')
+const assessmentStore = useAssessmentStore()
 
-const encourageTexts = [
-  '你做得非常棒！继续保持！',
-  '今天又进步了，真厉害！',
-  '你的专注力越来越好了！',
-  '太厉害了，继续加油哦！'
-]
+const score = ref(0)
+const time = ref('0秒')
+const accuracy = ref(0)
+const level = ref('待评定')
 
-const encourageText = ref(encourageTexts[Math.floor(Math.random() * encourageTexts.length)])
+const encourageTexts: Record<string, string[]> = {
+  EXCELLENT: [
+    '你做得非常棒！继续保持！',
+    '今天又进步了，真厉害！',
+    '你的专注力越来越好了！',
+    '太厉害了，继续加油哦！'
+  ],
+  GOOD: [
+    '表现不错！继续努力！',
+    '你越来越棒了！',
+    '坚持下去，你会更优秀的！',
+    '加油，你可以做到更好的！'
+  ],
+  AVERAGE: [
+    '继续加油，你会越来越好的！',
+    '每天进步一点点！',
+    '不要放弃，坚持训练！',
+    '相信自己，你可以的！'
+  ]
+}
+
+const encourageText = ref('')
+
+function calculateLevel(s: number): string {
+  if (s >= 90) return 'EXCELLENT'
+  if (s >= 70) return 'GOOD'
+  return 'AVERAGE'
+}
+
+onMounted(() => {
+  if (assessmentStore.result) {
+    score.value = assessmentStore.result.overallScore ?? 0
+    time.value = `${assessmentStore.result.duration ?? 0}秒`
+    accuracy.value = assessmentStore.result.accuracy ?? 0
+    level.value = assessmentStore.result.level ?? '待评定'
+    
+    const levelKey = calculateLevel(score.value)
+    const texts = encourageTexts[levelKey]
+    encourageText.value = texts?.[Math.floor(Math.random() * texts.length)] ?? '继续加油！'
+  }
+})
 
 function goHome() {
   router.push('/')

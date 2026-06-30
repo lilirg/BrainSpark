@@ -1,6 +1,16 @@
 <template>
   <div class="dashboard">
-    <h2>仪表板</h2>
+    <div class="dashboard-header">
+      <h2>仪表板</h2>
+      <el-select v-if="children.length > 1" v-model="selectedChildId" placeholder="选择孩子" @change="loadDashboard" size="large">
+        <el-option
+          v-for="child in children"
+          :key="child.id"
+          :label="child.name"
+          :value="child.id"
+        />
+      </el-select>
+    </div>
     <el-row :gutter="20">
       <el-col :span="6" v-for="stat in stats" :key="stat.label">
         <el-card shadow="hover" class="stat-card">
@@ -42,9 +52,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { parentApi, type ParentDashboard } from '../apis/parent'
+import { parentApi, type ParentDashboard, type Child } from '../apis/parent'
 
 const dashboard = ref<ParentDashboard | null>(null)
+const selectedChildId = ref<number>(0)
+const children = ref<Child[]>([])
+const loading = ref(false)
+
 const stats = ref([
   { label: '待处理报告', value: 0 },
   { label: '已完成测评', value: 0 },
@@ -52,26 +66,45 @@ const stats = ref([
   { label: '本周活跃', value: 0 }
 ])
 
+async function loadDashboard(childId: number) {
+  loading.value = true
+  try {
+    const res = await parentApi.getDashboard(childId)
+    dashboard.value = res.data
+    selectedChildId.value = childId
+    stats.value = [
+      { label: '待处理报告', value: res.data.pendingReports },
+      { label: '已完成测评', value: res.data.completedAssessments },
+      { label: '平均得分', value: res.data.averageScore },
+      { label: '本周活跃', value: res.data.recentActivities?.length ?? 0 }
+    ]
+  } catch (e) {
+    console.error('加载仪表板失败', e)
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(async () => {
   try {
     const childrenRes = await parentApi.getChildren()
+    children.value = childrenRes.data ?? []
     if (childrenRes.data?.length) {
-      const res = await parentApi.getDashboard(childrenRes.data[0].id)
-      dashboard.value = res.data
-      stats.value = [
-        { label: '待处理报告', value: res.data.pendingReports },
-        { label: '已完成测评', value: res.data.completedAssessments },
-        { label: '平均得分', value: res.data.averageScore },
-        { label: '本周活跃', value: 5 }
-      ]
+      await loadDashboard(childrenRes.data[0].id)
     }
   } catch (e) {
-    console.error('加载仪表板失败', e)
+    console.error('加载孩子列表失败', e)
   }
 })
 </script>
 
 <style scoped>
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
 .stat-card { text-align: center; }
 .stat-value { font-size: 32px; font-weight: 700; color: #409eff; }
 .stat-label { font-size: 14px; color: #909399; margin-top: 8px; }

@@ -1,5 +1,13 @@
 package com.brainspark.controller;
 
+import com.brainspark.entity.AssessmentType;
+import com.brainspark.entity.AssessmentTask;
+import com.brainspark.entity.SchoolClass;
+import com.brainspark.entity.User;
+import com.brainspark.repository.AssessmentTypeRepository;
+import com.brainspark.repository.AssessmentTaskRepository;
+import com.brainspark.repository.SchoolClassRepository;
+import com.brainspark.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -7,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -14,30 +23,60 @@ import java.util.*;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
+    private final AssessmentTypeRepository assessmentTypeRepository;
+    private final AssessmentTaskRepository assessmentTaskRepository;
+    private final SchoolClassRepository schoolClassRepository;
+    private final UserRepository userRepository;
+
     // 内容管理
     @GetMapping("/content/assessments")
     public ResponseEntity<List<Map<String, Object>>> getAssessmentContent() {
-        List<Map<String, Object>> content = List.of(
-            Map.of("id", 1, "name", "舒尔特方格", "type", "SCHULTER", "status", "ACTIVE"),
-            Map.of("id", 2, "name", "数字广度", "type", "DIGITAL_SPAN", "status", "ACTIVE"),
-            Map.of("id", 3, "name", "图形推理", "type", "PATTERN_REASONING", "status", "INACTIVE")
-        );
+        List<AssessmentType> types = assessmentTypeRepository.findAll();
+        List<Map<String, Object>> content = types.stream().map(type -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", type.getId());
+            map.put("name", type.getName());
+            map.put("typeCode", type.getCode());
+            map.put("description", type.getDescription());
+            map.put("durationMin", type.getDurationSeconds() != null ? type.getDurationSeconds() / 60 : 15);
+            map.put("difficulty", type.getDifficulty() != null ? type.getDifficulty().name() : "MEDIUM");
+            map.put("status", type.getStatus() != null ? type.getStatus().name() : "ACTIVE");
+            map.put("createdAt", type.getCreatedAt() != null ? type.getCreatedAt().toString() : LocalDateTime.now().toString());
+            return map;
+        }).collect(Collectors.toList());
         return ResponseEntity.ok(content);
     }
 
     @PutMapping("/content/assessments/{id}/status")
     public ResponseEntity<Map<String, String>> updateAssessmentStatus(
             @PathVariable Long id, @RequestBody Map<String, String> body) {
+        AssessmentType type = assessmentTypeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("测评类型不存在"));
+        String status = body.get("status");
+        if ("ACTIVE".equals(status)) {
+            type.setStatus(AssessmentType.AssessmentTypeStatus.ACTIVE);
+        } else if ("INACTIVE".equals(status)) {
+            type.setStatus(AssessmentType.AssessmentTypeStatus.INACTIVE);
+        }
+        assessmentTypeRepository.save(type);
         return ResponseEntity.ok(Map.of("message", "测评状态已更新"));
     }
 
     // 知识库管理
     @GetMapping("/knowledge/docs")
     public ResponseEntity<List<Map<String, Object>>> getKnowledgeDocs() {
-        return ResponseEntity.ok(List.of(
-            Map.of("id", 1, "title", "注意力训练指南", "status", "INDEXED"),
-            Map.of("id", 2, "title", "记忆力提升方法", "status", "PENDING")
-        ));
+        List<AssessmentTask> tasks = assessmentTaskRepository.findAll();
+        List<Map<String, Object>> docs = tasks.stream().map(task -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", task.getId());
+            map.put("title", task.getTitle());
+            map.put("category", task.getTypeCode());
+            map.put("status", task.getStatus() != null ? task.getStatus().name() : "PENDING");
+            map.put("createdAt", task.getCreatedAt() != null ? task.getCreatedAt().toString() : LocalDateTime.now().toString());
+            map.put("updatedAt", task.getUpdatedAt() != null ? task.getUpdatedAt().toString() : LocalDateTime.now().toString());
+            return map;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(docs);
     }
 
     @PostMapping("/knowledge/reindex")
@@ -49,9 +88,9 @@ public class AdminController {
     @GetMapping("/analytics/dashboard")
     public ResponseEntity<Map<String, Object>> getAnalytics() {
         Map<String, Object> analytics = new HashMap<>();
-        analytics.put("totalUsers", 12580);
-        analytics.put("activeUsers", 3842);
-        analytics.put("totalAssessments", 45678);
+        analytics.put("totalUsers", userRepository.count());
+        analytics.put("activeUsers", userRepository.count());
+        analytics.put("totalAssessments", assessmentTaskRepository.count());
         analytics.put("completionRate", 87.5);
         analytics.put("dailyActiveUsers", 1256);
         analytics.put("newUsersToday", 89);
@@ -65,10 +104,17 @@ public class AdminController {
     // 机构合作管理
     @GetMapping("/partners")
     public ResponseEntity<List<Map<String, Object>>> getPartners() {
-        return ResponseEntity.ok(List.of(
-            Map.of("id", 1, "name", "阳光小学", "status", "ACTIVE", "students", 1200),
-            Map.of("id", 2, "name", "星星幼儿园", "status", "PENDING", "students", 300)
-        ));
+        List<SchoolClass> classes = schoolClassRepository.findAll();
+        List<Map<String, Object>> partners = classes.stream().map(cls -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", cls.getId());
+            map.put("name", cls.getName());
+            map.put("students", cls.getMaxStudents() != null ? cls.getMaxStudents() : 0);
+            map.put("status", cls.getIsActive() ? "ACTIVE" : "PENDING");
+            map.put("createdAt", cls.getCreatedAt() != null ? cls.getCreatedAt().toString() : LocalDateTime.now().toString());
+            return map;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(partners);
     }
 
     @PostMapping("/partners")
